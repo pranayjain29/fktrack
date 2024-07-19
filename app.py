@@ -14,11 +14,11 @@ app = Flask(__name__)
 def scrape_blinkit_search(FSN_list):
     all_data = []
     chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run in headless mode
-    chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
-    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.binary_location = "/usr/bin/google-chrome"  # Path to the Chrome binary in the Docker container
 
-    # Initialize the WebDriver once
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
 
     for FSN in FSN_list:
