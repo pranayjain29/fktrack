@@ -1,5 +1,5 @@
 # Use a specific stable tag for the base image
-FROM cypress/browsers:node16.13.2-chrome91-ff89
+FROM cypress/browsers:latest
 
 # Set the port for the container
 ARG PORT=443
