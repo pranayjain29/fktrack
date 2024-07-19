@@ -5,24 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flipkart Scraper</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+        .container {
+            max-width: 600px;
+        }
+        h1 {
+            font-weight: 600;
+        }
+        .form-group label {
+            font-weight: 600;
+        }
+        .btn-primary, .btn-success {
+            font-weight: 600;
+        }
+        .mt-4 {
+            margin-top: 1.5rem !important;
+        }
+        .result-section {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-4">
-        <h1>Flipkart Scraper</h1>
+        <h1 class="text-center">Flipkart Scraper</h1>
         <form action="/scrape" method="post">
             <div class="form-group">
                 <label for="asins">Enter FSNs (separated by spaces):</label>
-                <input type="text" class="form-control" id="asins" name="asins" placeholder="FSNs...">
+                <input type="text" class="form-control" id="asins" name="asins" placeholder="FSNs..." required>
             </div>
-            <button type="submit" class="btn btn-primary">Scrape Flipkart</button>
+            <button type="submit" class="btn btn-primary btn-block">Scrape Flipkart</button>
         </form>
 
         {% if run_time %}
-        <div class="mt-4">
+        <div class="result-section mt-4">
             <h4>Scraping Runtime:</h4>
-            <p>{{ run_time }} seconds</p>
+            <p>{{ '{:.1f}'.format(run_time) }} seconds</p>
         </div>
-        <div class="mt-4">
+        <div class="result-section mt-4 text-center">
             <a href="{{ download_link }}" class="btn btn-success">Download Excel</a>
         </div>
         {% endif %}
