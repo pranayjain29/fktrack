@@ -1,6 +1,5 @@
 # Use a specific stable tag for the base image
 FROM cypress/browsers:latest
-
 # Set the port for the container
 ARG PORT=443
 
@@ -20,8 +19,7 @@ ENV PATH="/root/.local/bin:${PATH}"
 # Copy requirements.txt and install dependencies
 COPY requirements.txt .
 
-# Install dependencies using pip
-RUN python3 -m pip install --upgrade pip
+# Install dependencies using pip without upgrading pip
 RUN python3 -m pip install --user -r requirements.txt
 
 # Copy the rest of the application code
@@ -29,3 +27,4 @@ COPY . .
 
 # Set the entry point for the container
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "443"]
+
