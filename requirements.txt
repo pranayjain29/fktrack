@@ -7,4 +7,3 @@ pandas
 regex
 uvicorn
 openpyxl
-threaded
