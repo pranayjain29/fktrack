@@ -8,8 +8,10 @@ ARG PORT=443
 # Install necessary system packages and Python packages
 RUN apt-get update && \
     apt-get install -y \
-    gcc \
-    libffi-dev \
+    curl \
+    gnupg \
+    ca-certificates \
+    unzip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
