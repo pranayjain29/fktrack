@@ -36,5 +36,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code
 COPY . .
 
-# Set the entry point for the container
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "443"]
+CMD ["gunicorn", "main:app", "--workers", "2", "--max-requests", "1000", "--bind", "0.0.0.0:8080"]
+
