@@ -13,6 +13,12 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Google Chrome
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    dpkg -i google-chrome-stable_current_amd64.deb && \
+    apt-get -f install -y && \
+    rm google-chrome-stable_current_amd64.deb
+
 # Upgrade pip
 RUN python -m pip install --upgrade pip
 
