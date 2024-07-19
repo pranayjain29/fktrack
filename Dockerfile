@@ -1,5 +1,4 @@
-# Use a specific stable tag for the base image
-FROM cypress/browsers:latest
+# Use the Python 3.10 slim image as the base image
 FROM python:3.10-slim
 
 # Set the port for the container
@@ -39,4 +38,3 @@ COPY . .
 
 # Set the entry point for the container
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "443"]
-
