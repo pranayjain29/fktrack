@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flipkart Scraper</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Flipkart Scraper</h1>
+        <form action="/scrape" method="post">
+            <div class="form-group">
+                <label for="asins">Enter FSNs (separated by spaces):</label>
+                <input type="text" class="form-control" id="asins" name="asins" placeholder="FSNs...">
+            </div>
+            <button type="submit" class="btn btn-primary">Scrape Flipkart</button>
+        </form>
+
+        {% if run_time %}
+        <div class="mt-4">
+            <h4>Scraping Runtime:</h4>
+            <p>{{ run_time }} seconds</p>
+        </div>
+        <div class="mt-4">
+            <a href="{{ download_link }}" class="btn btn-success">Download Excel</a>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

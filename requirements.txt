@@ -1,0 +1,9 @@
+Flask
+Gunicorn
+selenium
+webdriver-manager
+beautifulsoup4
+pandas
+regex
+
+!python install_chrome.py
