@@ -110,8 +110,17 @@
     <script>
         document.getElementById('scrape-form').addEventListener('submit', function() {
             document.getElementById('progress-container').style.display = 'block';
+            resetProgress(); // Reset progress before starting
             updateProgress();
         });
+
+        function resetProgress() {
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            progressBar.style.width = '0%';
+            progressBar.setAttribute('aria-valuenow', 0);
+            progressText.textContent = '0%';
+        }
 
         function updateProgress() {
             fetch('/progress')
@@ -126,7 +135,7 @@
                     progressText.textContent = progress + '%';
 
                     if (progress < 100) {
-                        setTimeout(updateProgress, 2000); // Poll every second
+                        setTimeout(updateProgress, 1000); // Poll every 2 seconds
                     }
                 });
         }
