@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, url_for
+from flask import Flask, request, render_template, send_file, url_for, jsonify
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
@@ -11,51 +11,48 @@ import re
 
 app = Flask(__name__)
 
+# Global variable to store progress
+progress = 0
+
 def scrape_blinkit_search(FSN_list):
+    global progress
+    progress = 0
     all_data = []
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--headless")  # Run in headless mode
+    chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
+    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
     chrome_options.binary_location = "/usr/bin/google-chrome"  # Path to the Chrome binary in the Docker container
 
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
 
-    for FSN in FSN_list:
+    total_fsns = len(FSN_list)
+    for idx, FSN in enumerate(FSN_list):
         print(f"Processing FSN: {FSN}")
 
         url = f"https://www.flipkart.com/product/p/itme?pid={FSN}"
         driver.get(url)
         time.sleep(0.5)  # Reduced delay to allow the page to load
 
-        # Get page source after JavaScript has loaded
         html = driver.page_source
-
-        # Parse the HTML with BeautifulSoup
         soup = BeautifulSoup(html, 'html.parser')
 
         try:
-            # TITLE
             title_element = soup.find('div', class_='KalC6f').find('p')
             title = title_element.text.strip() if title_element else 'N/A'
             
-            # PRICE
             element = soup.find(class_="Nx9bqj CxhGGd")
-            price = element.text.strip()[1:] if element else None  # Remove the currency symbol if price exists
+            price = element.text.strip()[1:] if element else None
 
-            # SOLD OUT
             element = soup.find(class_="Z8JjpR")
             sold_out = element.text.strip() if element else None
 
-            # Extract rating
             rating_element = soup.find('div', class_='XQDdHH')
             rating = rating_element.text.strip() if rating_element else 'N/A'
             
-            # Extract reviews
             review_element = soup.find('span', class_='Wphh3N')
             review = review_element.text.strip() if review_element else 'N/A'
             
-            # Using regex to extract numeric values for rating count and review count
             rating_count = 'N/A'
             review_count = 'N/A'
             
@@ -64,11 +61,9 @@ def scrape_blinkit_search(FSN_list):
                 rating_count = int(match.group(1).replace(',', ''))
                 review_count = int(match.group(2).replace(',', ''))
             
-            # Converting extracted values to integers if they are numeric, otherwise keeping them as 'N/A'
             rating_count = int(rating_count) if rating_count != 'N/A' else 'N/A'
             review_count = int(review_count) if review_count != 'N/A' else 'N/A'
 
-            # SELLER NAME
             seller_element = soup.find(id="sellerName")
             seller_name = seller_element.text.strip() if seller_element else None
 
@@ -79,10 +74,10 @@ def scrape_blinkit_search(FSN_list):
             print(f"Error occurred for FSN: {FSN}. Error: {e}")
             continue
 
-    # Quit the driver after processing all FSNs
-    driver.quit()
+        # Update progress
+        progress = (idx + 1) / total_fsns * 100
 
-    # Create a DataFrame from the dictionary
+    driver.quit()
     df = pd.DataFrame(all_data)
     return df
 
@@ -92,26 +87,29 @@ def index():
 
 @app.route('/scrape', methods=['POST'])
 def scrape():
+    global progress
+    progress = 0
     asins = request.form['asins']
     FSN_list = asins.split()
     
-    # Measure the runtime of the scraping function
     start_time = time.time()
     df = scrape_blinkit_search(FSN_list)
     end_time = time.time()
     run_time = end_time - start_time
 
-    # Save DataFrame to Excel file in memory
     excel_file = io.BytesIO()
     df.to_excel(excel_file, index=False, sheet_name='Flipkart Prices')
     excel_file.seek(0)
 
-    # Save the Excel file to a temporary file
     temp_file_path = 'Flipkart_Price_scrapper.xlsx'
     with open(temp_file_path, 'wb') as f:
         f.write(excel_file.getbuffer())
 
     return render_template('index.html', run_time=run_time, download_link=url_for('download_file'))
+
+@app.route('/progress')
+def progress_status():
+    return jsonify({'progress': progress})
 
 @app.route('/download')
 def download_file():
