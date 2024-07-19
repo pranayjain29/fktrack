@@ -28,6 +28,11 @@ def scrape_blinkit_search(FSN_list):
 
     total_fsns = len(FSN_list)
     for idx, FSN in enumerate(FSN_list):
+        if total_fsns == 0:
+            progress = 0
+        else:
+            progress = int(idx / total_fsns * 100)
+
         print(f"Processing FSN: {FSN}")
 
         url = f"https://www.flipkart.com/product/p/itme?pid={FSN}"
@@ -70,11 +75,10 @@ def scrape_blinkit_search(FSN_list):
             all_data.append({'FSN': FSN, 'TITLE': title, 'Price': price, 'Ratings': rating, 
                              'Rating Count': rating_count, 'Review Count': review_count, 'SOLD OUT': sold_out, 
                              'SELLER NAME': seller_name})
-            progress = (idx + 1) / total_fsns * 100
         except Exception as e:
             print(f"Error occurred for FSN: {FSN}. Error: {e}")
-            progress = (idx + 1) / total_fsns * 100
             continue
+
 
     driver.quit()
     df = pd.DataFrame(all_data)
@@ -107,7 +111,7 @@ def scrape():
     return render_template('index.html', run_time=run_time, download_link=url_for('download_file'))
 
 @app.route('/progress')
-def progress_status():
+def progress_endpoint():
     return jsonify({'progress': progress})
 
 @app.route('/download')
