@@ -28,10 +28,7 @@ def scrape_blinkit_search(FSN_list):
 
     total_fsns = len(FSN_list)
     for idx, FSN in enumerate(FSN_list):
-        if total_fsns == 0:
-            progress = 0
-        else:
-            progress = int(idx / total_fsns * 100)
+        progress = int((idx + 1) / total_fsns * 100)
 
         print(f"Processing FSN: {FSN}")
 
@@ -78,7 +75,6 @@ def scrape_blinkit_search(FSN_list):
         except Exception as e:
             print(f"Error occurred for FSN: {FSN}. Error: {e}")
             continue
-
 
     driver.quit()
     df = pd.DataFrame(all_data)
