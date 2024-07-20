@@ -70,9 +70,11 @@ def scrape_part(FSN_list_part, result_list, index):
     chrome_options.binary_location = "/usr/bin/google-chrome"  # Path to the Chrome binary in the Docker container
 
     try:
-        driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
+        service = ChromeService(executable_path=ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
     except Exception as e:
         logging.error(f"Error initializing WebDriver: {e}")
+        result_list[index] = []
         return
 
     part_data = []
