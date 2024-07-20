@@ -34,7 +34,7 @@ def scrape_blinkit_search(FSN_list):
 
         url = f"https://www.flipkart.com/product/p/itme?pid={FSN}"
         driver.get(url)
-        time.sleep(0.1)  # Reduced delay to allow the page to load
+        time.sleep(0)  # Reduced delay to allow the page to load
 
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
