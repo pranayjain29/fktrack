@@ -20,7 +20,20 @@ progress = 0
 logging.basicConfig(level=logging.INFO)
 
 # Function to scrape a single FSN
-def scrape_fsn(driver, FSN):
+def scrape_fsn(FSN):
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode
+    chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
+    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
+    chrome_options.binary_location = "/usr/bin/google-chrome"  # Path to the Chrome binary in the Docker container
+
+    try:
+        service = ChromeService(executable_path=ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+    except Exception as e:
+        logging.error(f"Error initializing WebDriver for FSN: {FSN}, Error: {e}")
+        return None
+
     url = f"https://www.flipkart.com/product/p/itme?pid={FSN}"
     driver.get(url)
     time.sleep(2)  # Adjust delay to allow the page to load
@@ -57,34 +70,23 @@ def scrape_fsn(driver, FSN):
     seller_element = soup.find(id="sellerName")
     seller_name = seller_element.text.strip() if seller_element else None
 
+    driver.quit()
+
     return {'FSN': FSN, 'TITLE': title, 'Price': price, 'Ratings': rating, 
             'Rating Count': rating_count, 'Review Count': review_count, 'SOLD OUT': sold_out, 
             'SELLER NAME': seller_name}
 
 # Function to run the scraping for a part of the FSN list
 def scrape_part(FSN_list_part, result_list, index):
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run in headless mode
-    chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
-    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
-    chrome_options.binary_location = "/usr/bin/google-chrome"  # Path to the Chrome binary in the Docker container
-
-    try:
-        service = ChromeService(executable_path=ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-    except Exception as e:
-        logging.error(f"Error initializing WebDriver: {e}")
-        result_list[index] = []
-        return
-
     part_data = []
     for FSN in FSN_list_part:
         try:
-            part_data.append(scrape_fsn(driver, FSN))
+            data = scrape_fsn(FSN)
+            if data:
+                part_data.append(data)
         except Exception as e:
             logging.error(f"Error occurred for FSN: {FSN}. Error: {e}")
     
-    driver.quit()
     result_list[index] = part_data
 
 def scrape_blinkit_search(FSN_list):
