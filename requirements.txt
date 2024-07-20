@@ -7,3 +7,4 @@ pandas
 regex
 uvicorn==0.22.0
 openpyxl
+queuelib
