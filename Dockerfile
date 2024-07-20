@@ -1,9 +1,6 @@
 # Use the Python 3.10 slim image as the base image
 FROM python:3.10-slim
 
-# Set the port for the container
-ARG PORT=443
-
 # Install necessary system packages and Google Chrome
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -31,6 +28,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set the entry point for the container
-CMD ["gunicorn", "app:app", "--workers", "1", "--timeout", "2000", "--max-requests", "10000", "--bind", "0.0.0.0:443"]
+CMD ["gunicorn", "app:app", "--workers", "1", "--timeout", "1000", "--max-requests", "20000", "--bind", "0.0.0.0:443"]
+
 # Expose the port
 EXPOSE 443
