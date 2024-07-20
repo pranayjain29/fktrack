@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     chromium \
     && pip install --no-cache-dir -r requirements.txt
 
-ENV PATH="/app/.wdm/drivers/chromedriver/linux64/126.0.6478.182:{PATH}"
+# Ensure the right PATH is set for chromedriver
+ENV PATH="/app/.wdm/drivers/chromedriver/linux64/126.0.6478.182:${PATH}"
 
-CMD ["python", "app.py"]
+CMD ["python3", "app.py"]
