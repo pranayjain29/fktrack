@@ -1,5 +1,4 @@
-FROM cypress/browsers:latest
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 # Set the port for the container
 ARG PORT=443
