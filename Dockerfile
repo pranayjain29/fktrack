@@ -36,5 +36,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set the entry point for the container
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "443", "--workers", "5", "--timeout-keep-alive", "200", "--log-level", "info"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "443", "--workers", "4", "--timeout-keep-alive", "200", "--log-level", "info"]
 
