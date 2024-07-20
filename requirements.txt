@@ -5,5 +5,5 @@ webdriver-manager
 beautifulsoup4
 pandas
 regex
-uvicorn
+uvicorn==0.22.0
 openpyxl
