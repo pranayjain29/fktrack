@@ -31,7 +31,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set the entry point for the container
-CMD ["gunicorn", "app:app", "--workers", "1", "--timeout", "120", "--graceful-timeout", "80", "--max-requests", "1000", "--bind", "0.0.0.0:443"]
-
+CMD ["gunicorn", "app:app", "--workers", "1", "--timeout", "2000", "--max-requests", "10000", "--bind", "0.0.0.0:443"]
 # Expose the port
 EXPOSE 443
