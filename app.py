@@ -11,34 +11,32 @@ import re
 
 app = Flask(__name__)
 
-# Global variable to store progress
-progress = 0
 
 def scrape_blinkit_search(FSN_list):
     global progress
     progress = 0
     all_data = []
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode
+    chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
+    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
+    
+
+    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
 
     total_fsns = len(FSN_list)
-    
     for idx, FSN in enumerate(FSN_list):
-        progress = int((idx + 1) / total_fsns * 100)
-        
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")  # Run in headless mode
-        chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
-        chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
-        chrome_options.binary_location = "/usr/bin/google-chrome"  # Path to the Chrome binary in the Docker container
-        
-        # Initialize the WebDriver for each FSN
-        driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
+        if total_fsns == 0:
+            progress = 0
+        else:
+            progress = int((idx+0.5) / total_fsns * 100)
 
         print(f"Processing FSN: {FSN}")
-        
+        print(f"Progres:{progress}")
         url = f"https://www.flipkart.com/product/p/itme?pid={FSN}"
         driver.get(url)
-        time.sleep(0.5)  # Delay to allow the page to load
-        
+        time.sleep(0.5)  # Reduced delay to allow the page to load
+
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
 
@@ -78,10 +76,9 @@ def scrape_blinkit_search(FSN_list):
         except Exception as e:
             print(f"Error occurred for FSN: {FSN}. Error: {e}")
             continue
-        finally:
-            # Ensure the WebDriver is closed
-            driver.quit()
 
+
+    driver.quit()
     df = pd.DataFrame(all_data)
     return df
 
