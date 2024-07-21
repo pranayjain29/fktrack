@@ -1,20 +1,16 @@
-# Use a minimal Python image
+# Use the Python 3.10 slim image as the base image
 FROM python:3.10-slim
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
+# Set the port for the container
+ARG PORT=443
 
-# Install system dependencies
+# Install necessary system packages and Python packages
 RUN apt-get update && \
     apt-get install -y \
     curl \
     gnupg \
     ca-certificates \
     unzip \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -28,16 +24,17 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip and install Python dependencies
+# Upgrade pip
 RUN python -m pip install --upgrade pip
 
-# Copy requirements file and install dependencies
+# Copy requirements.txt and install dependencies
 COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code
+# Copy the rest of the application code
 COPY . .
 
-# Expose port and define entry point
-EXPOSE 3000
-CMD ["gunicorn", "app:app", "--workers", "4", "--timeout", "500", "--max-requests", "1000", "--bind", "0.0.0.0:3000"]
+# Set the entry point for the container
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "443", "--workers", "4", "--timeout-keep-alive", "60", "--log-level", "info"]
