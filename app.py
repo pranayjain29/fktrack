@@ -30,7 +30,7 @@ def scrape_flipkart_search(FSN_list):
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
 
-            title_element = soup.find('span', class_='KalC6f').find('p')
+            title_element = soup.find('span', class_='KalC6f')
             title = title_element.text.strip() if title_element else 'N/A'
 
             price_element = soup.find('div', class_='Nx9bqj CxhGGd')
