@@ -40,4 +40,4 @@ COPY . .
 
 # Expose port and define entry point
 EXPOSE 3000
-CMD ["gunicorn", "app:app", "--workers", "1", "--timeout", "1000", "--max-requests", "2000", "--bind", "0.0.0.0:3000"]
+CMD ["gunicorn", "app:app", "--workers", "4", "--timeout", "500", "--max-requests", "1000", "--bind", "0.0.0.0:3000"]
