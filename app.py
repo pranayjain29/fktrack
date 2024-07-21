@@ -30,19 +30,15 @@ def scrape_flipkart_search(FSN_list):
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
 
-            title_element = soup.find('span', class_='KalC6f')
-            if title_element:
-                print("Found span with class 'KalC6f'")
-                title_element_p = title_element.find('p')
-                if title_element_p:
-                    print("Found <p> inside the span")
-                    title = title_element_p.text.strip()
+            div = soup.find('div', class_='KalC6f')
+            if div:
+                p = div.find('p')
+                if p:
+                    title = p.text.strip()
                 else:
-                    print("Did not find <p> inside the span")
-                    title = 'N/A'
+                    title = "Paragraph tag not found"
             else:
-                print("Did not find span with class 'KalC6f'")
-                title = 'N/A'
+                title = "Div with class 'KalC6f' not found"
 
             price_element = soup.find('div', class_='Nx9bqj CxhGGd')
             price = price_element.text.strip() if price_element else 'N/A'
