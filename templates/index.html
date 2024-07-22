@@ -151,6 +151,7 @@
             const elem = document.getElementById("myBar");
             elem.style.width = progress + "%";
             elem.innerText = progress + "%";
+            console.log(`Update Progress Bar: ${progress}%`);
             document.getElementById('myProgress').style.display = progress > 0 ? 'block' : 'none';
         }
 
