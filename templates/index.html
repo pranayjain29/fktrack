@@ -52,30 +52,7 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             margin-top: 1.5rem;
         }
-        .hidden {
-            display: none;
-        }
-        
-    .progress-bar {
-    width: 100%;
-    background-color: #ffffff; /* White background for the container */
-    border: 6px solid #000000; /* Black border */
-    border-radius: 10px;
-    overflow: hidden;
-    margin-top: 20px;
-    display: none; /* Set to block for testing visibility */
-}
-
-.progress-bar div {
-    height: 30px;
-    background-color: #28a745; /* Green color for progress */
-    color: white;
-    line-height: 30px;
-    font-weight: bold;
-    text-align: center;
-    border-radius: 0;
-    transition: width 0.5s ease-in-out; /* Smooth transition for width change */
-}
+    
 
     </style>
 </head>
@@ -96,9 +73,6 @@
                         <button type="submit" class="btn btn-primary">Scrape</button>
                     </div>
                 </form>
-                <div id="myProgress" class="progress-bar">
-                    <div id="myBar">0%</div>
-                </div>
 
                 <div style="margin-top: 40px;"></div>
 
@@ -108,9 +82,6 @@
                     <p>{{ '{:.1f}'.format(run_time) }} seconds</p>
                     <a href="{{ download_link }}" class="btn btn-success">Download Excel</a>
                 </div>
-                <script>
-                    updateProgressBar(0);
-                </script>
                 {% endif %}
             </div>
             
@@ -126,9 +97,6 @@
                         <button type="submit" class="btn btn-primary">Upload and Compare</button>
                     </div>
                 </form>
-                <div id="priceComparisonProgress" class="progress-bar hidden">
-                    <div id="priceComparisonBar">0%</div>
-                </div>
                 
                 <div style="margin-top: 40px;"></div>
                 
@@ -146,76 +114,6 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zyDMDt8s/0/1C0PRq/4rfFflYBIZ0f/2Fmk8jM/T" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9H2wBsN5FRK2Z4wff8H8F7o9TDoP5uDJYx4VnvKQDF0VrHau92bQ" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-pzjw8f+ua7Kw1TIWw6tp+5cXy8V5pD0gD43fR0n8ZDzDAI7Bqhu5Opm6FfFOlbGgF" crossorigin="anonymous"></script>
-    <script>
-        function updateProgressBar(progress) {
-            const elem = document.getElementById("myBar");
-            elem.style.width = progress + "%";
-            elem.innerText = progress + "%";
-            console.log(`Update Progress Bar: ${progress}%`);
-            document.getElementById('myProgress').style.display = progress > 0 ? 'block' : 'none';
-        }
-
-        function checkProgress() {
-            fetch('/progress')
-                .then(response => response.json())
-                .then(data => {
-                    const progress = data.progress || 0;
-                    updateProgressBar(progress);
-                    if (progress >= 100) {
-                        setTimeout(() => {
-                            document.getElementById('myProgress').style.display = 'none';
-                            updateProgressBar(0);
-                        }, 1000);
-                    }
-                })
-                .catch(error => console.error('Error fetching progress:', error));
-        }
-
-        function updatePriceComparisonProgressBar(progress) {
-            const elem = document.getElementById("priceComparisonBar");
-            elem.style.width = progress + "%";
-            elem.innerText = progress + "%";
-            document.getElementById('priceComparisonProgress').style.display = progress > 0 ? 'block' : 'none';
-        }
-
-        function checkPriceComparisonProgress() {
-            fetch('/price_comparison_progress')
-                .then(response => response.json())
-                .then(data => {
-                    const progress = data.progress || 0;
-                    updatePriceComparisonProgressBar(progress);
-                    if (progress >= 100) {
-                        document.getElementById('priceComparisonProgress').style.display = 'none';
-                        updatePriceComparisonProgressBar(0);
-                    }
-                })
-                .catch(error => console.error('Error fetching progress:', error));
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('scrape-form').addEventListener('submit', function() {
-                updateProgressBar(0);
-                document.getElementById('myProgress').style.display = 'block';
-            });
-            document.getElementById('price-comparison-form').addEventListener('submit', function() {
-                updatePriceComparisonProgressBar(0);
-                document.getElementById('priceComparisonProgress').style.display = 'block';
-            });
-            setInterval(checkProgress, 1000);
-            setInterval(checkPriceComparisonProgress, 1000);
-        });
-    </script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
-<script type="text/javascript">
-  var socket = io.connect('https://' + document.domain + ':' + location.port + '/scrape');
-
-  socket.on('progress', function(data) {
-    var progress = data.progress;
-    document.getElementById('progress-bar').style.width = progress + '%';
-    document.getElementById('progress-bar').innerText = progress + '%';
-  });
-</script>
 
 </body>
 </html>
