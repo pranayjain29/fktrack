@@ -5,15 +5,15 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import time
-from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-socketio = SocketIO(app)
-
 progress = 0
 progress2 = 0
 
 def scrape_flipkart_search(FSN_list):
+    global progress
+    progress = 0
+    update_progress(progress)
     all_data = []
     total_fsns = len(FSN_list)
 
@@ -23,8 +23,8 @@ def scrape_flipkart_search(FSN_list):
     for idx, FSN in enumerate(FSN_list):
 
         progress = int((idx + 1) / total_fsns * 100)
-        socketio.emit('progress', {'progress': progress}, namespace='/scrape')
 
+        update_progress(progress)
         print(f"Processing FSN: {FSN}")
         print(f"Progress: {progress}")
         url = f"https://www.flipkart.com/product/p/itme?pid={FSN}"
@@ -83,6 +83,8 @@ def index():
 @app.route('/scrape', methods=['POST'])
 def scrape():
 
+    global progress
+    progress = 0
     asins = request.form['asins']
     FSN_list = asins.split()
 
