@@ -10,3 +10,4 @@ uvicorn==0.22.0
 openpyxl
 queuelib
 gevent==22.10.2
+XlsxWriter
