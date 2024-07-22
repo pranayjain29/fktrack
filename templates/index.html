@@ -65,13 +65,26 @@
             display: none;
         }
         .progress-bar div {
-            height: 30px;
-            background-color: #28a745;
-            color: white;
-            line-height: 30px;
-            font-weight: bold;
-            text-align: center;
-            border-radius: 0;
+            .progress-bar {
+    width: 100%;
+    background-color: #ffffff; /* White background for the container */
+    border: 6px solid #000000; /* Black border */
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 20px;
+    display: block; /* Set to block for testing visibility */
+}
+
+.progress-bar div {
+    height: 30px;
+    background-color: #28a745; /* Green color for progress */
+    color: white;
+    line-height: 30px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 0;
+    transition: width 0.5s ease-in-out; /* Smooth transition for width change */
+}
         }
     </style>
 </head>
