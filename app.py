@@ -82,7 +82,9 @@ def index():
 
 @app.route('/scrape', methods=['POST'])
 def scrape():
-    
+
+    global progress
+    progress = 0
     asins = request.form['asins']
     FSN_list = asins.split()
 
