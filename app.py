@@ -152,7 +152,7 @@ def price_comparison():
 
         progress2 = int((idxx + 1) / total_fsnss * 100)
         update_progress2(progress2)
-        price, status, title = scrape_price(fsn)
+        price, status, title, seller_name = scrape_price(fsn)
 
         if price is not None:
             try:
@@ -170,6 +170,7 @@ def price_comparison():
                     'Price': price,
                     'Desired Price': desired_prices.get(fsn, 0),
                     'Price Difference': price_difference,
+                    'Seller Name':seller_name,
                     'SOLD OUT': status
                 })
 
@@ -212,10 +213,13 @@ def scrape_price(fsn):
         price_element = soup.find('div', class_='Nx9bqj CxhGGd')
         price = price_element.text.strip() if price_element else 'N/A'
 
+        seller_element = soup.find('div', id='sellerName')
+        seller_name = seller_element.text.strip() if seller_element else 'N/A'
+
         sold_out_element = soup.find('div', class_='Z8JjpR')
         status = sold_out_element.text.strip() if sold_out_element else 'Available'
 
-        return price, status, title
+        return price, status, title, seller_name
 
     except Exception as e:
         print(f"Error occurred while scraping price for FSN: {fsn}. Error: {e}")
