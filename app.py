@@ -8,6 +8,7 @@ import time
 
 app = Flask(__name__)
 progress = 0
+progress2 = 0
 
 def scrape_flipkart_search(FSN_list):
     global progress
