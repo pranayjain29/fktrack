@@ -10,6 +10,25 @@ app = Flask(__name__)
 progress = 0
 progress2 = 0
 
+def extract_star_ratings(soup):
+    star_ratings = {
+        '5_star': 0,
+        '4_star': 0,
+        '3_star': 0,
+        '2_star': 0,
+        '1_star': 0
+    }
+
+    rating_elements = soup.select('ul li.fQ-FC1 div.BArk-j')
+    if rating_elements and len(rating_elements) == 5:
+        star_ratings['5_star'] = int(rating_elements[0].text.strip())
+        star_ratings['4_star'] = int(rating_elements[1].text.strip())
+        star_ratings['3_star'] = int(rating_elements[2].text.strip())
+        star_ratings['2_star'] = int(rating_elements[3].text.strip())
+        star_ratings['1_star'] = int(rating_elements[4].text.strip())
+
+    return star_ratings
+    
 def scrape_flipkart_search(FSN_list):
     global progress
     progress = 0
@@ -58,6 +77,7 @@ def scrape_flipkart_search(FSN_list):
 
             seller_element = soup.find('div', id='sellerName')
             seller_name = seller_element.text.strip() if seller_element else 'N/A'
+            star_ratings = extract_star_ratings(soup)
 
             all_data.append({
                 'FSN': FSN,
@@ -67,7 +87,12 @@ def scrape_flipkart_search(FSN_list):
                 'Rating Count': rating_count,
                 'Review Count': review_count,
                 'SOLD OUT': sold_out,
-                'SELLER NAME': seller_name
+                'SELLER NAME': seller_name,
+                '5 Star Ratings': star_ratings['5_star'],
+                '4 Star Ratings': star_ratings['4_star'],
+                '3 Star Ratings': star_ratings['3_star'],
+                '2 Star Ratings': star_ratings['2_star'],
+                '1 Star Ratings': star_ratings['1_star']
             })
         except Exception as e:
             print(f"Error occurred for FSN: {FSN}. Error: {e}")
