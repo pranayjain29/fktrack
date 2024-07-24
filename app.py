@@ -10,24 +10,91 @@ app = Flask(__name__)
 progress = 0
 progress2 = 0
 
+def convert_to_int(value):
+    try:
+        # Ensure the value is a string for processing
+        if isinstance(value, int):
+            return value
+        elif isinstance(value, str):
+            # Remove any commas and strip leading/trailing whitespace
+            cleaned_value = value.replace(',', '').strip()
+            return int(cleaned_value)
+        else:
+            # Handle cases where the value is neither int nor str
+            raise ValueError(f"Unsupported type: {type(value)}")
+    except ValueError as e:
+        # Print the value and error for debugging purposes
+        print(f"Failed to convert value: {value}. Error: {e}")
+        return 0  # Or choose a default value if conversion fails
+
+
+    
 def extract_star_ratings(soup):
-    star_ratings = {
-        '5_star': 0,
-        '4_star': 0,
-        '3_star': 0,
-        '2_star': 0,
-        '1_star': 0
-    }
-
-    rating_elements = soup.select('ul li.fQ-FC1 div.BArk-j')
-    if rating_elements and len(rating_elements) == 5:
-        star_ratings['5_star'] = int(rating_elements[0].text.strip())
-        star_ratings['4_star'] = int(rating_elements[1].text.strip())
-        star_ratings['3_star'] = int(rating_elements[2].text.strip())
-        star_ratings['2_star'] = int(rating_elements[3].text.strip())
-        star_ratings['1_star'] = int(rating_elements[4].text.strip())
-
+    star_ratings = {'5_star': '0', '4_star': '0', '3_star': '0', '2_star': '0', '1_star': '0'}
+    
+    try:
+        # Find the <ul> with class '+psZUR'
+        ul_element = soup.find('ul', class_='+psZUR')
+        if not ul_element:
+            print("No <ul> with class '+psZUR' found.")
+            return star_ratings
+        
+        # Find all <li> elements within this <ul>
+        li_elements = ul_element.find_all('li', class_='fQ-FC1')
+        print(f"Found {len(li_elements)} <li> elements")
+        
+        # Extract values from <div> elements with class 'BArk-j' within these <li> elements
+        for i, li in enumerate(li_elements[:5]):
+            div_element = li.find('div', class_='BArk-j')
+            if div_element:
+                rating_text = div_element.get_text(strip=True)
+                print(f"Extracted rating text: '{rating_text}'")
+                rating_value = convert_to_int(rating_text)
+                print(f"Converted rating value: {rating_value}")
+                
+                # Map the index to star rating
+                if i == 0:
+                    star_ratings['5_star'] = rating_value
+                elif i == 1:
+                    star_ratings['4_star'] = rating_value
+                elif i == 2:
+                    star_ratings['3_star'] = rating_value
+                elif i == 3:
+                    star_ratings['2_star'] = rating_value
+                elif i == 4:
+                    star_ratings['1_star'] = rating_value
+            else:
+                print(f"No <div> with class 'BArk-j' found in <li> index {i}")
+        
+    except Exception as e:
+        print(f"Error extracting star ratings: {e}")
+    
     return star_ratings
+
+def extract_parameter_ratings(soup):
+    parameters = {}
+    parameter_elements = soup.select('div._5nb2hu')
+    
+    for i, param in enumerate(parameter_elements, 1):
+        parameter_name_element = param.find('div', class_='NTiEl0')
+        parameter_rating_element = param.find('text', class_='_2DdnFS')
+        
+        if parameter_name_element:
+            parameter_name = parameter_name_element.text.strip()
+        else:
+            parameter_name = f'Parameter{i} Name'
+        
+        if parameter_rating_element:
+            parameter_rating = parameter_rating_element.text.strip()
+        else:
+            parameter_rating = 'N/A'
+        
+        parameters[f'Parameter{i} Name'] = parameter_name
+        parameters[f'Parameter{i} Rating'] = parameter_rating
+        print(f"Extracted parameter {i}: {parameter_name} with rating {parameter_rating}")
+    
+    return parameters
+
     
 def scrape_flipkart_search(FSN_list):
     global progress
@@ -78,6 +145,7 @@ def scrape_flipkart_search(FSN_list):
             seller_element = soup.find('div', id='sellerName')
             seller_name = seller_element.text.strip() if seller_element else 'N/A'
             star_ratings = extract_star_ratings(soup)
+            parameter_ratings = extract_parameter_ratings(soup)
 
             all_data.append({
                 'FSN': FSN,
@@ -88,11 +156,12 @@ def scrape_flipkart_search(FSN_list):
                 'Review Count': review_count,
                 'SOLD OUT': sold_out,
                 'SELLER NAME': seller_name,
-                '5 Star Ratings': star_ratings['5_star'],
-                '4 Star Ratings': star_ratings['4_star'],
-                '3 Star Ratings': star_ratings['3_star'],
-                '2 Star Ratings': star_ratings['2_star'],
-                '1 Star Ratings': star_ratings['1_star']
+                '5 Star Ratings': star_ratings.get('5_star', '0'),
+                '4 Star Ratings': star_ratings.get('4_star', '0'),
+                '3 Star Ratings': star_ratings.get('3_star', '0'),
+                '2 Star Ratings': star_ratings.get('2_star', '0'),
+                '1 Star Ratings': star_ratings.get('1_star', '0'),
+                **parameter_ratings
             })
         except Exception as e:
             print(f"Error occurred for FSN: {FSN}. Error: {e}")
