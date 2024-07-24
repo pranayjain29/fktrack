@@ -33,43 +33,34 @@ def extract_star_ratings(soup):
     star_ratings = {'5_star': '0', '4_star': '0', '3_star': '0', '2_star': '0', '1_star': '0'}
     
     try:
-        # Find the <ul> with class '+psZUR'
-        ul_element = soup.find('ul', class_='+psZUR')
-        if not ul_element:
-            print("No <ul> with class '+psZUR' found.")
-            return star_ratings
+        # Find all <div> elements with class 'BArk-j'
+        div_elements = soup.find_all('div', class_='BArk-j')
+        print(f"Found {len(div_elements)} <div> elements with class 'BArk-j'")
         
-        # Find all <li> elements within this <ul>
-        li_elements = ul_element.find_all('li', class_='fQ-FC1')
-        print(f"Found {len(li_elements)} <li> elements")
-        
-        # Extract values from <div> elements with class 'BArk-j' within these <li> elements
-        for i, li in enumerate(li_elements[:5]):
-            div_element = li.find('div', class_='BArk-j')
-            if div_element:
-                rating_text = div_element.get_text(strip=True)
-                print(f"Extracted rating text: '{rating_text}'")
-                rating_value = convert_to_int(rating_text)
-                print(f"Converted rating value: {rating_value}")
-                
-                # Map the index to star rating
-                if i == 0:
-                    star_ratings['5_star'] = rating_value
-                elif i == 1:
-                    star_ratings['4_star'] = rating_value
-                elif i == 2:
-                    star_ratings['3_star'] = rating_value
-                elif i == 3:
-                    star_ratings['2_star'] = rating_value
-                elif i == 4:
-                    star_ratings['1_star'] = rating_value
-            else:
-                print(f"No <div> with class 'BArk-j' found in <li> index {i}")
+        # Extract values from <div> elements
+        for i, div in enumerate(div_elements[:5]):  # Limit to first 5 for star ratings
+            rating_text = div.get_text(strip=True)
+            print(f"Extracted rating text: '{rating_text}'")
+            rating_value = convert_to_int(rating_text)
+            print(f"Converted rating value: {rating_value}")
+            
+            # Map the index to star rating
+            if i == 0:
+                star_ratings['5_star'] = rating_value
+            elif i == 1:
+                star_ratings['4_star'] = rating_value
+            elif i == 2:
+                star_ratings['3_star'] = rating_value
+            elif i == 3:
+                star_ratings['2_star'] = rating_value
+            elif i == 4:
+                star_ratings['1_star'] = rating_value
         
     except Exception as e:
         print(f"Error extracting star ratings: {e}")
     
     return star_ratings
+
 
 def extract_parameter_ratings(soup):
     parameters = {}
