@@ -7,23 +7,70 @@ from bs4 import BeautifulSoup
 import re
 import time
 import random
+import urllib.parse
 
 app = Flask(__name__)
-progress = 0
-progress2 = 0
 
 user_agents = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:114.0) Gecko/20100101 Firefox/114.0',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:114.0) Gecko/20100101 Firefox/114.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36',
 ]
+
+mobile_user_agents = ['Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1']
+
+def get_headers():
+    return {
+        'User-Agent': random.choice(user_agents),
+    }
+
+def get_mobile_headers():
+    return {
+        'User-Agent': random.choice(mobile_user_agents),
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive'
+    }
+
+def extract_pid(url):
+    try:
+        return url.split('pid=')[-1].split('&')[0]
+    except IndexError:
+        return None
 
 async def fetch(session, url):
     headers = {
         'User-Agent': random.choice(user_agents),
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive'
     }
-    async with session.get(url, headers=headers) as response:
-        return await response.text()
+    
+    try:
+        async with session.get(url, headers=headers) as response:
+            if response.status == 200:
+                return await response.text()
+            else:
+                content = await response.text()
+                print(f"Failed to fetch {url}. Status code: {response.status}. Response: {content}")
+                return None
+    except Exception as e:
+        print(f"Error fetching {url}: {e}")
+        return None
+    
+async def fetch_mob(session, url):
+    headers = get_mobile_headers()
+    try:
+        async with session.get(url, headers=headers) as response:
+            if response.status == 200:
+                return await response.text()
+            else:
+                print(f"Failed to fetch {url}. Status code: {response.status}")
+                return None
+    except Exception as e:
+        print(f"Error fetching {url}: {e}")
+        return None
 
 def convert_to_int(value):
     try:
@@ -161,27 +208,6 @@ async def scrape():
 
     return render_template('index.html', run_time=run_time, download_link=url_for('download_file'))
 
-@app.route('/progress', methods=['GET'])
-def get_progress():
-    global progress
-    if progress >= 100:
-        progress = 0
-    return jsonify({'progress': progress})
-
-def update_progress(value):
-    global progress
-    progress = value
-
-def update_progress2(value):
-    global progress2
-    progress2 = value
-
-@app.route('/price_comparison_progress', methods=['GET'])
-def get_price_comparison_progress():
-    global progress2
-    if progress2 >= 100:
-        progress2 = 0
-    return jsonify({'progress': progress2})
 
 @app.route('/download')
 def download_file():
@@ -192,64 +218,230 @@ def download_file():
         download_name='Flipkart_Price_scrapper.xlsx'
     )
 
-@app.route('/price_comparison', methods=['POST'])
-async def price_comparison():
-    start_time = time.time()
-    file = request.files.get('file')
-    df = pd.read_excel(file, header=0)
-    df.columns = ['FSN', 'Desired Price']
-    FSN_list = df['FSN'].tolist()
-    desired_prices = dict(zip(df['FSN'], df['Desired Price']))
-    results = []
-
-    global progress2
-    progress2 = 0
-    total_fsnss = len(FSN_list)
+async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_list):
+    all_data = []
+    global progress
+    progress = 0
 
     async with aiohttp.ClientSession() as session:
-        tasks = [fetch(session, f"https://www.flipkart.com/product/p/itme?pid={fsn}") for fsn in FSN_list]
-        responses = await asyncio.gather(*tasks)
+        tasks = [fetch(session, f"https://www.flipkart.com/product/p/itme?pid={pid}") for pid in pid_list]
+        html_responses = await asyncio.gather(*tasks)
 
-        for idxx, html in enumerate(responses):
-            progress2 = int((idxx + 1) / total_fsnss * 100)
-            update_progress2(progress2)
+        tasks_mob = [fetch_mob(session, f"https://www.flipkart.com/product/p/itme?pid={pid}") for pid in pid_list]
+        html_mob_responses = await asyncio.gather(*tasks_mob)
+
+        total_fsns = len(pid_list)
+        for i, pid in enumerate(pid_list):
+            progress = int((i + 1) / total_fsns * 100)
+            print(f"Processing FSN: {pid_list[i]}")
+            print(f"Progress: {progress}")
+
+            html = html_responses[i]
+            soup = BeautifulSoup(html, 'html.parser')
+
+            html_mob = html_mob_responses[i]
+            soup_mob = BeautifulSoup(html_mob, 'html.parser') if html_mob else None
+
+            effective_price = None
+            if soup_mob:
+                html_content = soup_mob.prettify()
+                price_pattern = r'([\w\s]*?)\s*₹(\d{1,3}(?:,\d{3})*|\d+)'
+                matches = re.findall(price_pattern, html_content)
+                for preceding_text, price in matches:
+                    if not preceding_text.strip():
+                        effective_price = float(price.replace(',', ''))
+
+            first_number = second_number = 0
+            if soup_mob:
+                div_mob = soup_mob.find('div', class_='r-rjixqe')
+                if div_mob:
+                    text_content = ' '.join(span.get_text() for span in div_mob.find_all('span'))
+                    numbers = re.findall(r'\d{1,3}(?:,\d{3})*|\d+', text_content)
+                    if numbers:
+                        first_number = numbers[0].replace(',', '')
+                        second_number = numbers[1]
+
+            div = soup.find('div', class_='KalC6f')
+            title = div.find('p').text.strip() if div and div.find('p') else "Not found"
+
+            brand = title.split()[0]
+
+            price_element = soup.find('div', class_='Nx9bqj CxhGGd')
+            price = price_element.text.strip() if price_element else 'N/A'
+
+            sold_out_element = soup.find('div', class_='Z8JjpR')
+            sold_out = sold_out_element.text.strip() if sold_out_element else 'Available'
+
+            rating_element = soup.find('div', class_='XQDdHH')
+            rating = rating_element.text.strip() if rating_element else 'N/A'
+
+            review_element = soup.find('span', class_='Wphh3N')
+            review = review_element.text.strip() if review_element else 'N/A'
+
+            rating_count = review_count = 0
+            match = re.search(r'(\d{1,3}(?:,\d{3})*|\d+)\s*Ratings\s*&\s*(\d{1,3}(?:,\d{3})*|\d+)\s*Reviews', review)
+            if match:
+                rating_count = int(match.group(1).replace(',', ''))
+                review_count = int(match.group(2).replace(',', ''))
+
+            seller_element = soup.find('div', id='sellerName')
+            seller_name = seller_element.text.strip() if seller_element else 'N/A'
+
+            parameter_ratings = await extract_parameter_ratings(soup)
+            star_ratings = await extract_star_ratings(soup)
+
+            product_data = {
+                'Orders': first_number,
+                'Days': second_number,
+                'PID': pid,
+                'Sponsored': sponsored_list[i],
+                'Title': title,
+                'Brand': brand,
+                'Price': price,
+                'Effective Price': effective_price,
+                'Rating': rating,
+                'Rating Count': rating_count,
+                'Review Count': review_count,
+                'Sold Out': sold_out,
+                'Seller Name': seller_name,
+                'Page': page_list[i],
+                'Rank': rank_list[i],
+                '5 Star Ratings': star_ratings.get('5_star', '0'),
+                '4 Star Ratings': star_ratings.get('4_star', '0'),
+                '3 Star Ratings': star_ratings.get('3_star', '0'),
+                '2 Star Ratings': star_ratings.get('2_star', '0'),
+                '1 Star Ratings': star_ratings.get('1_star', '0'),
+                **parameter_ratings
+            }
+
+            all_data.append(product_data)
+
+    return all_data
+
+async def scrape_pids(query, pages):
+    base_url = "https://www.flipkart.com/search"
+    pids = []
+    sponsored_status = []
+    paging = []
+    rank = []
+    counter=0
+
+    async with aiohttp.ClientSession() as session:
+        # Create a list of tasks for fetching all pages concurrently
+        tasks = [fetch(session, f"{base_url}?q={urllib.parse.quote(query)}&page={page}") for page in range(1, pages + 1)]
+        responses = await asyncio.gather(*tasks)
+        total_pages = len(responses)
+
+        for idx, html in enumerate(responses):
+            progress = int((idx + 1) / total_pages * 100)
+            print(f"Processing page: {idx + 1}/{total_pages}")
+            print(f"Progress: {progress}%")
 
             soup = BeautifulSoup(html, 'html.parser')
 
-            price, status, title = await scrape_price(soup)
+            # Find all product links
+            product_elements = soup.find_all('a', class_='CGtC98')
+            product_urls = ["https://www.flipkart.com" + elem['href'] for elem in product_elements if 'href' in elem.attrs]
 
-            if price is not None:
-                try:
-                    price_value = float(re.sub('[^\d.]', '', price))
-                    desired_price = desired_prices.get(FSN_list[idxx])
-                    if desired_price:
-                        diff = price_value - desired_price
-                        result = f"FSN: {FSN_list[idxx]}, Title: {title}, Price: {price}, Difference: {diff:.2f}"
-                        results.append(result)
-                except ValueError:
-                    results.append(f"FSN: {FSN_list[idxx]}, Price parsing error")
+            if (not product_urls):
+                print("Wrong layout")
+                return [],[],[],[]
+            
+            for elem in product_elements:
+                pid = extract_pid(elem['href'])
+                if pid:
+                    counter += 1
+                    pids.append(pid)
+                    is_sponsored = 'Yes' if elem.find('div', class_='f8qK5m') else 'No'
+                    sponsored_status.append(is_sponsored)   
+                    paging.append(idx+1)
+                    rank.append(counter)
+    
+    return pids, sponsored_status, paging, rank
 
-    end_time = time.time()
-    run_time = end_time - start_time
+async def scrape_pids2(query, pages):
+    base_url = "https://www.flipkart.com/search"
+    pids = []
+    sponsored_status = []
+    paging = []
+    rank = []
+    counter=0
 
-    results_file = io.BytesIO()
-    with open('Price_Comparison_Results.txt', 'w') as file:
-        for result in results:
-            file.write(result + '\n')
-        file.seek(0)
+    async with aiohttp.ClientSession() as session:
+        # Create a list of tasks for fetching all pages concurrently
+        tasks = [fetch(session, f"{base_url}?q={urllib.parse.quote(query)}&page={page}") for page in range(1, pages + 1)]
+        responses = await asyncio.gather(*tasks)
+        total_pages = len(responses)
 
-    with open('Price_Comparison_Results.txt', 'wb') as file:
-        file.write(results_file.getbuffer())
+        for idx, html in enumerate(responses):
+            progress = int((idx + 1) / total_pages * 100)
+            print(f"Processing page: {idx + 1}/{total_pages}")
+            print(f"Progress: {progress}%")
 
-    return render_template('index.html', run_time=run_time, download_link=url_for('download_file_comparison'))
+            soup = BeautifulSoup(html, 'html.parser')
 
-@app.route('/download_comparison')
-def download_file_comparison():
+            # Find all product links
+            product_elements = soup.find_all('div', attrs={'data-id': True})
+            
+            for elem in product_elements:
+                pid = elem.get('data-id')
+                if pid:
+                    counter += 1
+                    pids.append(pid)
+                    # Check if the product is sponsored
+                    is_sponsored = 'Yes' if elem.find('div', class_='xgS27m') else 'No'
+                    sponsored_status.append(is_sponsored)
+                    paging.append(idx+1)
+                    rank.append(counter)
+    
+    return pids, sponsored_status, paging, rank
+
+@app.route('/fetch_competitor_data', methods=['POST'])
+async def comp_scrape():
+    query = request.form['query']
+    pages = int(request.form['num_pages'])
+    all_data = []
+    starttime = time.time()
+
+    pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
+    if not pids:
+        pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
+
+    scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
+    all_data.extend(scrape_tasks)
+    endtime = time.time()
+    run_timee = endtime - starttime
+
+    df = pd.DataFrame(all_data)
+    print(df.shape)
+
+    comp_excel_file = io.BytesIO()
+    with pd.ExcelWriter(comp_excel_file, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Flipkart Comp Data')
+    comp_excel_file.seek(0)
+
+    temp_file_path = 'Flipkart_CompData_scrapper.xlsx'
+    with open(temp_file_path, 'wb') as f:
+        f.write(comp_excel_file.getvalue())
+
+    return render_template('competitor_data.html', fetch_runtime=run_timee, fetch_download_link=url_for('download_file_comp'))
+
+@app.route('/index2')
+def index2():
+    return render_template('competitor_data.html')
+
+@app.route('/self')
+def self():
+    return render_template('index.html')
+
+@app.route('/download_file_comp')
+def download_file_comp():
+    temp_file_path = 'Flipkart_CompData_scrapper.xlsx'
     return send_file(
-        'Price_Comparison_Results.txt',
-        mimetype='text/plain',
+        temp_file_path,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name='Price_Comparison_Results.txt'
+        download_name=temp_file_path
     )
 
 if __name__ == '__main__':
