@@ -8,8 +8,12 @@ import re
 import time
 import random
 import urllib.parse
+import logging
 
 app = Flask(__name__)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 user_agents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -321,11 +325,11 @@ async def scrape_pids(query, pages):
 
         for idx, html in enumerate(responses):
             if html is None:
-                print(f"Skipping page: {idx + 1} due to fetch error.")
+                logging.info(f"Skipping page: {idx + 1} due to fetch error.")
                 continue
             progress = int((idx + 1) / total_pages * 100)
-            print(f"Processing page: {idx + 1}/{total_pages}")
-            print(f"Progress: {progress}%")
+            logging.info(f"Processing page: {idx + 1}/{total_pages}")
+            logging.info(f"Progress: {progress}%")
 
             soup = BeautifulSoup(html, 'html.parser')
 
