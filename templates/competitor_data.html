@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flipkart Scraper</title>
+    <title>Competitor Data</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
     <link rel="stylesheet" href="css/style.css">
     <style>
@@ -65,40 +65,44 @@
         <!-- Tabs -->
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item">
-                <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">FSNs Scraper</a>
+                <a class="nav-link" id="home-tab" href="/self" role="tab" aria-controls="home" aria-selected="false">FSNs Scraper</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="competitor-data-tab" href="/index2" role="tab" aria-controls="competitor-data" aria-selected="false">Competitor Data</a>
+                <a class="nav-link active" id="competitor-data-tab" data-toggle="tab" href="#competitor-data" role="tab" aria-controls="competitor-data" aria-selected="true">Competitor Data</a>
             </li>
         </ul>
         <div class="tab-content mt-3">
-            <!-- FSNs Scraper Tab -->
-            <div class="page page-active" id="home">
-                <form action="/scrape" method="post" id="scrape-form">
+            <!-- Competitor Data Tab -->
+            <div class="page page-active" id="competitor-data">
+                <form action="/fetch_competitor_data" method="post" id="competitor-data-form">
                     <div class="form-group">
-                        <label for="asins" class="sr-only">Enter FSNs (separated by spaces):</label>
-                        <input type="text" class="form-control" id="asins" name="asins" placeholder="Enter FSNs (separated by spaces)" required>
+                        <label for="query">Query:</label>
+                        <input type="text" class="form-control" id="query" name="query" placeholder="Enter search query" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="num_pages">No. of Pages:</label>
+                        <input type="number" class="form-control" id="num_pages" name="num_pages" placeholder="Enter number of pages" required>
                     </div>
                     <div class="text-center">
-                        <button type="submit" class="btn btn-primary">Scrape</button>
+                        <button type="submit" class="btn btn-primary">Fetch Data</button>
                     </div>
                 </form>
-
+                
                 <div style="margin-top: 40px;"></div>
-
-                {% if run_time %}
+                
+                {% if fetch_runtime %}
                 <div class="result-section text-center">
-                    <h4>Scraping Runtime:</h4>
-                    <p>{{ '{:.1f}'.format(run_time) }} seconds</p>
-                    <a href="{{ download_link }}" class="btn btn-success">Download Excel</a>
+                    <h4>Fetch Runtime:</h4>
+                    <p>{{ '{:.1f}'.format(fetch_runtime) }} seconds</p>
+                    <a href="{{ fetch_download_link }}" class="btn btn-success">Download Data</a>
                 </div>
                 {% endif %}
             </div>
-            
-            <div style="margin-top: 40px;"></div>
-                
         </div>
     </div>
-    
+    <!-- Include jQuery and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zyDMDt8s/0/1C0PRq/4rfFflYBIZ0f/2Fmk8jM/T" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9H2wBsN5FRK2Z4wff8H8F7o9TDoP5uDJYx4VnvKQDF0VrHau92bQ" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-pzjw8f+ua7Kw1TIWw6tp+5cXy8V5pD0gD43fR0n8ZDzDAI7Bqhu5Opm6FfFOlbGgF" crossorigin="anonymous"></script>
 </body>
 </html>
