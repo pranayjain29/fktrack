@@ -381,6 +381,9 @@ async def scrape_pids2(query, pages):
         total_pages = len(responses)
 
         for idx, html in enumerate(responses):
+            if html is None:
+                print(f"Skipping page: {idx + 1} due to fetch error.")
+                continue
             progress = int((idx + 1) / total_pages * 100)
             print(f"Processing page: {idx + 1}/{total_pages}")
             print(f"Progress: {progress}%")
