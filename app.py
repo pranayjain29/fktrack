@@ -332,11 +332,11 @@ async def scrape_pids(query, pages):
             logging.info(f"Progress: {progress}%")
 
             soup = BeautifulSoup(html, 'html.parser')
-
+            logging.info(soup)
             # Find all product links
             product_elements = soup.find_all('a', class_='CGtC98')
             product_urls = ["https://www.flipkart.com" + elem['href'] for elem in product_elements if 'href' in elem.attrs]
-
+            logging.info(f"URLS: {product_urls}")
             if (not product_urls):
                 print("Wrong layout")
                 return [],[],[],[]
