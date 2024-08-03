@@ -51,30 +51,13 @@ async def fetch(session, url):
         'Connection': 'keep-alive'
     }
     
-    try:
-        async with session.get(url, headers=headers) as response:
-            if response.status == 200:
-                return await response.text()
-            else:
-                content = await response.text()
-                print(f"Failed to fetch {url}. Status code: {response.status}. Response: {content}")
-                return None
-    except Exception as e:
-        print(f"Error fetching {url}: {e}")
-        return None
+    async with session.get(url, headers=headers) as response:
+            return await response.text()
     
 async def fetch_mob(session, url):
     headers = get_mobile_headers()
-    try:
-        async with session.get(url, headers=headers) as response:
-            if response.status == 200:
-                return await response.text()
-            else:
-                print(f"Failed to fetch {url}. Status code: {response.status}")
-                return None
-    except Exception as e:
-        print(f"Error fetching {url}: {e}")
-        return None
+    async with session.get(url, headers=headers) as response:
+            return await response.text()
 
 def convert_to_int(value):
     try:
