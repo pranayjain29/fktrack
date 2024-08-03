@@ -49,10 +49,7 @@ def extract_pid(url):
 
 async def fetch(session, url):
     headers = {
-        'User-Agent': random.choice(user_agents),
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive'
+        'User-Agent': random.choice(user_agents)
     }
     
     async with session.get(url, headers=headers) as response:
