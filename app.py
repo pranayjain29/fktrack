@@ -207,6 +207,9 @@ async def scrape():
     excel_file.seek(0)
 
     temp_file_path = 'Flipkart_Price_scrapper.xlsx'
+    if os.path.exists(temp_file_path):
+        os.remove(temp_file_path)
+        
     with open(temp_file_path, 'wb') as f:
         f.write(excel_file.getbuffer())
 
