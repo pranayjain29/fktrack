@@ -61,7 +61,6 @@ async def fetch(session, url):
                 print(f"Failed to fetch {url}. Status code: {response.status}")
                 return None
     except Exception as e:
-        print(f"Error fetching {url}: {e}")
         return None
     
 async def fetch_mob(session, url):
@@ -74,7 +73,6 @@ async def fetch_mob(session, url):
                 print(f"Failed to fetch {url}. Status code: {response.status}")
                 return None
     except Exception as e:
-        print(f"Error fetching {url}: {e}")
         return None
 
 
@@ -144,7 +142,6 @@ async def scrape_flipkart_search(FSN_list):
         responses = await asyncio.gather(*tasks)
 
         for idx, html in enumerate(responses):
-            print(html)
             progress = int((idx + 1) / total_fsns * 100)
             print(f"Processing FSN: {FSN_list[idx]}")
             print(f"Progress: {progress}")
