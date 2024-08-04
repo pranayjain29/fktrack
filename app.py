@@ -421,7 +421,7 @@ async def comp_scrape():
 
     return render_template('competitor_data.html', fetch_runtime=run_timee, fetch_download_link=url_for('download_file_comp'))
 '''
-
+@app.route('/fetch_competitor_data', methods=['POST'])
 async def comp_scrape():
     query = request.form['query']
     pages = int(request.form['num_pages'])
