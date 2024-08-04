@@ -207,7 +207,7 @@ async def scrape():
     df.to_excel(excel_file, index=False, sheet_name='Flipkart Prices')
     excel_file.seek(0)
 
-    temp_file_path = 'Flipkart_Price_scrapper.xlsx'
+    temp_file_path = 'Flipkart_Price_Scrapper.xlsx'
     if os.path.exists(temp_file_path):
         os.remove(temp_file_path)
         
@@ -220,10 +220,10 @@ async def scrape():
 @app.route('/download')
 def download_file():
     return send_file(
-        'Flipkart_Price_scrapper.xlsx',
+        'Flipkart_Price_Scrapper.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name='Flipkart_Price_scrapper.xlsx'
+        download_name='Flipkart_Price_Scrapper.xlsx'
     )
 
 async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_list):
