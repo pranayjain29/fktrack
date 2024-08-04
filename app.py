@@ -317,7 +317,8 @@ async def scrape_pids(query, pages):
 
     async with aiohttp.ClientSession() as session:
         # Create a list of tasks for fetching all pages concurrently
-        tasks = [fetch(session, f"{base_url}?q={urllib.parse.quote(query)}&page={page}") for page in range(1, pages + 1)]
+        tasks = [fetch(session, f"https://www.flipkart.com/search?q={urllib.parse.quote(query)}&page={page}") for page in range(1, pages + 1)]
+        logging.info(tasks)
         responses = await asyncio.gather(*tasks)
         total_pages = len(responses)
 
