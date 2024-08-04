@@ -45,6 +45,7 @@ def extract_pid(url):
         return None
 
 async def fetch(session, url):
+    time.sleep(random.uniform(0.5,0.5))
     headers = {
         'User-Agent': random.choice(user_agents),
         'Accept-Language': 'en-US,en;q=0.9',
@@ -65,6 +66,7 @@ async def fetch(session, url):
         return None
     
 async def fetch_mob(session, url):
+    time.sleep(random.uniform(0.5,0.5))
     headers = get_mobile_headers()
     
     try:
