@@ -104,7 +104,7 @@ async def extract_star_ratings(soup):
                 star_ratings['1_star'] = rating_value
     except Exception as e:
         print(f"Error extracting star ratings: {e}")
-    return star_ratings
+    return await star_ratings
 
 async def extract_parameter_ratings(soup):
     parameters = {}
@@ -118,7 +118,7 @@ async def extract_parameter_ratings(soup):
         
         parameters[f'Parameter{i} Name'] = parameter_name
         parameters[f'Parameter{i} Rating'] = parameter_rating
-    return parameters
+    return await parameters
 
 async def scrape_flipkart_search(FSN_list):
     global progress
@@ -206,7 +206,7 @@ async def scrape():
     with open(temp_file_path, 'wb') as f:
         f.write(excel_file.getbuffer())
 
-    return render_template('index.html', run_time=run_time, download_link=url_for('download_file'))
+    return await render_template('index.html', run_time=run_time, download_link=url_for('download_file'))
 
 
 @app.route('/download')
@@ -428,7 +428,7 @@ async def comp_scrape():
 
 @app.route('/index2')
 def index2():
-    return render_template('competitor_data.html')
+    return await render_template('competitor_data.html')
 
 @app.route('/self')
 def self():
