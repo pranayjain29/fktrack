@@ -27,6 +27,9 @@ RUN apt-get update && \
 # Upgrade pip
 RUN python -m pip install --upgrade pip
 
+RUN pip install playwright && \
+    playwright install --with-deps
+
 # Copy requirements.txt and install dependencies
 COPY requirements.txt .
 
