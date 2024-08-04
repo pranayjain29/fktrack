@@ -399,7 +399,9 @@ async def scrape_pids2(query, pages):
 @app.route('/fetch_competitor_data', methods=['POST'])
 async def comp_scrape():
     query = await request.form['query']
-    pages = await int(request.form['num_pages'])
+    pages_str = await request.form.get('num_pages', '0')
+    pages = int(pages_str)
+
     all_data = []
     starttime = time.time()
 
