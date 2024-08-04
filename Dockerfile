@@ -18,11 +18,6 @@ RUN apt-get update && \
 RUN curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list'
 
-# Install Google Chrome
-RUN apt-get update && \
-    apt-get install -y google-chrome-stable && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip
 RUN python -m pip install --upgrade pip
@@ -36,5 +31,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code
 COPY . .
 
-# Set the entry point for the container
-CMD ["hypercorn", "app:app", "-b", "0.0.0.0:3000", "--timeout", "120"]
+CMD ["hypercorn", "app:app", "-b", "0.0.0.0:3000", "--graceful-timeout", "120", "--keep-alive", "5"]
