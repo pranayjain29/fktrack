@@ -223,7 +223,7 @@ def download_file():
         'Flipkart_Price_Scrapper.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name='Flipkart_Price_Scrapper.xlsx'
+        download_name='Flipkart_Test.xlsx'
     )
 
 async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_list):
