@@ -349,11 +349,13 @@ async def scrape_pids(query, pages):
             url = f"{base_url}?q={query}&page={page}"
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
-
+            
             # Find all product links
             product_elements = soup.find_all('a', class_='CGtC98')
             product_urls = ["https://www.flipkart.com" + elem['href'] for elem in product_elements if 'href' in elem.attrs]
 
+            logging.info(f"Product URLs: {product_urls}")
+            
             if not product_urls:
                 print("Wrong layout")
                 await browser.close()
@@ -381,7 +383,7 @@ async def scrape_pids2(query, pages):
     paging = []
     rank = []
     counter = 0
-
+    logging.info(f"Inside 2")
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(user_agent=random.choice(user_agents))
@@ -421,6 +423,7 @@ async def comp_scrape():
     if not pids:
         pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
 
+    logging.info(f"Main func, pids: {pids}")
     # Call a function to scrape product details using pids
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
     all_data.extend(scrape_tasks)
