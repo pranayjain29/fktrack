@@ -104,7 +104,7 @@ async def extract_star_ratings(soup):
                 star_ratings['1_star'] = rating_value
     except Exception as e:
         print(f"Error extracting star ratings: {e}")
-    return await star_ratings
+    return star_ratings
 
 async def extract_parameter_ratings(soup):
     parameters = {}
@@ -118,7 +118,7 @@ async def extract_parameter_ratings(soup):
         
         parameters[f'Parameter{i} Name'] = parameter_name
         parameters[f'Parameter{i} Rating'] = parameter_rating
-    return await parameters
+    return parameters
 
 async def scrape_flipkart_search(FSN_list):
     global progress
