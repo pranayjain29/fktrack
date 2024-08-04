@@ -425,6 +425,7 @@ async def comp_scrape():
 async def comp_scrape():
     query = request.form['query']
     pages = int(request.form['num_pages'])
+    logging.info(f"Q: {query}, P: {pages}")
     all_data = []
     starttime = time.time()
     global progress
@@ -440,9 +441,9 @@ async def comp_scrape():
 
     for page in range(1, pages + 1):
         url = f"{base_url}?q={urllib.parse.quote(query)}&page={page}"
+        logging.info(f"URL: {url}")
         try:
             response = requests.get(url, headers={'User-Agent': random.choice(user_agents)})
-            response.raise_for_status()
             html = response.text
         except requests.RequestException as e:
             logging.error(f"Error fetching page {page}: {e}")
