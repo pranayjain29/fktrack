@@ -15,13 +15,6 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-proxy_list = [
-    {'https': '103.69.243.162:43826'},
-    { 'https': '116.74.80.134:8080'},
-    {'https': '103.173.244.210:58080'},
-    {'https': '216.10.247.145:3128'}
-]
-
 
 user_agents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -58,10 +51,9 @@ async def fetch(session, url):
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive'
     }
-    proxy = random.choice(proxy_list)
-    
+   
     try:
-        async with session.get(url, headers=headers, proxy=proxy['https']) as response:
+        async with session.get(url, headers=headers) as response:
             if response.status == 200:
                 return await response.text()
             else:
@@ -74,9 +66,9 @@ async def fetch(session, url):
     
 async def fetch_mob(session, url):
     headers = get_mobile_headers()
-    proxy = random.choice(proxy_list)
+    
     try:
-        async with session.get(url, headers=headers, proxy=proxy['https']) as response:
+        async with session.get(url, headers=headers) as response:
             if response.status == 200:
                 return await response.text()
             else:
