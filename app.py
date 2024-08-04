@@ -46,7 +46,7 @@ def extract_pid(url):
         return url.split('pid=')[-1].split('&')[0]
     except IndexError:
         return None
-
+'''
 async def fetch(session, url):
     headers = {
         'User-Agent': random.choice(user_agents)
@@ -54,6 +54,21 @@ async def fetch(session, url):
     
     async with session.get(url, headers=headers) as response:
             return await response.text()
+            '''
+
+async def fetch(session, url, retries=3):
+    headers = {'User-Agent': random.choice(user_agents)}
+    for attempt in range(retries):
+        try:
+            async with session.get(url, headers=headers) as response:
+                if response.status == 200:
+                    return await response.text()
+                else:
+                    logger.error(f"Failed to fetch {url}: {response.status}")
+        except Exception as e:
+            logger.error(f"Exception while fetching {url}: {e}")
+        await asyncio.sleep(2)  # Wait before retrying
+    return None
     
 async def fetch_mob(session, url):
     headers = get_mobile_headers()
