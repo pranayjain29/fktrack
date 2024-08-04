@@ -185,8 +185,8 @@ async def scrape_flipkart_search(FSN_list):
     return df
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+async def index():
+    return await render_template('index.html')
 
 @app.route('/scrape', methods=['POST'])
 async def scrape():
@@ -210,8 +210,8 @@ async def scrape():
 
 
 @app.route('/download')
-def download_file():
-    return send_file(
+async def download_file():
+    return await send_file(
         'Flipkart_Price_scrapper.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
@@ -427,17 +427,17 @@ async def comp_scrape():
     return await render_template('competitor_data.html', fetch_runtime=run_timee, fetch_download_link=url_for('download_file_comp'))
 
 @app.route('/index2')
-def index2():
-    return render_template('competitor_data.html')
+async def index2():
+    return await render_template('competitor_data.html')
 
 @app.route('/self')
-def self():
-    return render_template('index.html')
+async def self():
+    return await render_template('index.html')
 
 @app.route('/download_file_comp')
-def download_file_comp():
+async def download_file_comp():
     temp_file_path = 'Flipkart_CompData_scrapper.xlsx'
-    return send_file(
+    return await send_file(
         temp_file_path,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
