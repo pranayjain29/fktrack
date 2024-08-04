@@ -8,8 +8,11 @@ import re
 import time
 import random
 import urllib.parse
+import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 user_agents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -198,6 +201,7 @@ async def scrape():
     end_time = time.time()
     run_time = end_time - start_time
 
+    logging.info(f"shape: {df.shape}")
     excel_file = io.BytesIO()
     df.to_excel(excel_file, index=False, sheet_name='Flipkart Prices')
     excel_file.seek(0)
