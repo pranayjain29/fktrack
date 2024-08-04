@@ -374,9 +374,9 @@ async def scrape_pids2(query, pages):
             progress = int((idx + 1) / total_pages * 100)
             logging.info(f"Processing page: {idx + 1}/{total_pages}")
             logging.info(f"Progress: {progress}%")
-
+            logging.info(f"Layout2: {html}")
             soup = BeautifulSoup(html, 'html.parser')
-
+            
             # Find all product links
             product_elements = soup.find_all('div', attrs={'data-id': True})
             
