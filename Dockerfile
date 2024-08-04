@@ -37,4 +37,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set the entry point for the container
-CMD ["gunicorn", "-w", "4", "-k", "gevent", "-b", "0.0.0.0:3000", "--timeout", "120", "app:app"]
+CMD ["hypercorn", "app:app","-b", "0.0.0.0:3000", "--timeout-keep-alive", "120"]
