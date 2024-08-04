@@ -208,6 +208,7 @@ def download_file():
         download_name='Flipkart_Price_scrapper.xlsx'
     )
 
+'''
 async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_list):
     all_data = []
     global progress
@@ -419,6 +420,170 @@ async def comp_scrape():
         f.write(comp_excel_file.getvalue())
 
     return render_template('competitor_data.html', fetch_runtime=run_timee, fetch_download_link=url_for('download_file_comp'))
+'''
+
+async def comp_scrape():
+    query = request.form['query']
+    pages = int(request.form['num_pages'])
+    all_data = []
+    starttime = time.time()
+    global progress
+    progress = 0
+
+    # Combine the logic of scrape_pids and scrape_pids2
+    base_url = "https://www.flipkart.com/search"
+    pids = []
+    sponsored_status = []
+    paging = []
+    rank = []
+    counter = 0
+
+    for page in range(1, pages + 1):
+        url = f"{base_url}?q={urllib.parse.quote(query)}&page={page}"
+        try:
+            response = requests.get(url, headers={'User-Agent': random.choice(user_agents)})
+            response.raise_for_status()
+            html = response.text
+        except requests.RequestException as e:
+            logging.error(f"Error fetching page {page}: {e}")
+            continue
+
+        progress = int(page / pages * 100)
+        logging.info(f"Progress: {progress}%")
+        soup = BeautifulSoup(html, 'html.parser')
+        logging.info(soup)
+
+        product_elements = soup.find_all('a', class_='CGtC98')
+        product_urls = ["https://www.flipkart.com" + elem['href'] for elem in product_elements if 'href' in elem.attrs]
+
+        if not product_urls:
+            logging.info("Trying alternative layout")
+            product_elements = soup.find_all('div', attrs={'data-id': True})
+
+        for elem in product_elements:
+            pid = extract_pid(elem['href']) if 'href' in elem.attrs else elem.get('data-id')
+            if pid:
+                counter += 1
+                pids.append(pid)
+                is_sponsored = 'Yes' if elem.find('div', class_='f8qK5m' if 'href' in elem.attrs else 'xgS27m') else 'No'
+                sponsored_status.append(is_sponsored)
+                paging.append(page)
+                rank.append(counter)
+
+    if not pids:
+        logging.info("No product IDs found")
+        return render_template('competitor_data.html', fetch_runtime=0, fetch_download_link='#')
+
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch(session, f"https://www.flipkart.com/product/p/itme?pid={pid}") for pid in pids]
+        html_responses = await asyncio.gather(*tasks)
+
+        tasks_mob = [fetch_mob(session, f"https://www.flipkart.com/product/p/itme?pid={pid}") for pid in pids]
+        html_mob_responses = await asyncio.gather(*tasks_mob)
+
+    total_fsns = len(pids)
+    for i, pid in enumerate(pids):
+        progress = int((i + 1) / total_fsns * 100)
+        print(f"Processing FSN: {pids[i]}")
+        print(f"Progress: {progress}")
+
+        html = html_responses[i]
+        soup = BeautifulSoup(html, 'html.parser')
+
+        html_mob = html_mob_responses[i]
+        soup_mob = BeautifulSoup(html_mob, 'html.parser') if html_mob else None
+
+        effective_price = None
+        if soup_mob:
+            html_content = soup_mob.prettify()
+            price_pattern = r'([\w\s]*?)\s*₹(\d{1,3}(?:,\d{3})*|\d+)'
+            matches = re.findall(price_pattern, html_content)
+            for preceding_text, price in matches:
+                if not preceding_text.strip():
+                    effective_price = float(price.replace(',', ''))
+
+        first_number = second_number = 0
+        if soup_mob:
+            div_mob = soup_mob.find('div', class_='r-rjixqe')
+            if div_mob:
+                text_content = ' '.join(span.get_text() for span in div_mob.find_all('span'))
+                numbers = re.findall(r'\d{1,3}(?:,\d{3})*|\d+', text_content)
+                if numbers:
+                    first_number = numbers[0].replace(',', '')
+                    second_number = numbers[1]
+
+        div = soup.find('div', class_='KalC6f')
+        title = div.find('p').text.strip() if div and div.find('p') else "Not found"
+
+        brand = title.split()[0]
+
+        price_element = soup.find('div', class_='Nx9bqj CxhGGd')
+        price = price_element.text.strip() if price_element else 'N/A'
+
+        sold_out_element = soup.find('div', class_='Z8JjpR')
+        sold_out = sold_out_element.text.strip() if sold_out_element else 'Available'
+
+        rating_element = soup.find('div', class_='XQDdHH')
+        rating = rating_element.text.strip() if rating_element else 'N/A'
+
+        review_element = soup.find('span', class_='Wphh3N')
+        review = review_element.text.strip() if review_element else 'N/A'
+
+        rating_count = review_count = 0
+        match = re.search(r'(\d{1,3}(?:,\d{3})*|\d+)\s*Ratings\s*&\s*(\d{1,3}(?:,\d{3})*|\d+)\s*Reviews', review)
+        if match:
+            rating_count = int(match.group(1).replace(',', ''))
+            review_count = int(match.group(2).replace(',', ''))
+
+        seller_element = soup.find('div', id='sellerName')
+        seller_name = seller_element.text.strip() if seller_element else 'N/A'
+
+        parameter_ratings = await extract_parameter_ratings(soup)
+        star_ratings = await extract_star_ratings(soup)
+
+        product_data = {
+            'Orders': first_number,
+            'Days': second_number,
+            'PID': pid,
+            'Sponsored': sponsored_status[i],
+            'Title': title,
+            'Brand': brand,
+            'Price': price,
+            'Effective Price': effective_price,
+            'Rating': rating,
+            'Rating Count': rating_count,
+            'Review Count': review_count,
+            'Sold Out': sold_out,
+            'Seller Name': seller_name,
+            'Page': paging[i],
+            'Rank': rank[i],
+            '5 Star Ratings': star_ratings.get('5_star', '0'),
+            '4 Star Ratings': star_ratings.get('4_star', '0'),
+            '3 Star Ratings': star_ratings.get('3_star', '0'),
+            '2 Star Ratings': star_ratings.get('2_star', '0'),
+            '1 Star Ratings': star_ratings.get('1_star', '0'),
+            **parameter_ratings
+        }
+
+        all_data.append(product_data)
+
+    endtime = time.time()
+    run_timee = endtime - starttime
+
+    df = pd.DataFrame(all_data)
+    print(df.shape)
+
+    comp_excel_file = io.BytesIO()
+    with pd.ExcelWriter(comp_excel_file, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Flipkart Comp Data')
+    comp_excel_file.seek(0)
+
+    temp_file_path = 'Flipkart_CompData_scrapper.xlsx'
+    with open(temp_file_path, 'wb') as f:
+        f.write(comp_excel_file.getvalue())
+
+    return render_template('competitor_data.html', fetch_runtime=run_timee, fetch_download_link=url_for('download_file_comp'))
+
 
 @app.route('/index2')
 def index2():
