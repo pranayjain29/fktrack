@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, url_for, jsonify
+from quart import Quart, request, render_template, send_file, url_for, jsonify
 import pandas as pd
 import io
 import aiohttp
@@ -9,7 +9,7 @@ import time
 import random
 import urllib.parse
 
-app = Flask(__name__)
+app = Quart(__name__)
 
 user_agents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
