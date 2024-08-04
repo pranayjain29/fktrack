@@ -218,7 +218,7 @@ async def download_file():
         'Flipkart_Price_scrapper.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name='Flipkart_Price_scrapper.xlsx'
+        attachment_filename='Flipkart_Price_scrapper.xlsx'
     )
 
 async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_list):
@@ -451,7 +451,7 @@ async def download_file_comp():
         temp_file_path,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name=temp_file_path
+        attachment_filename=temp_file_path
     )
 
 if __name__ == '__main__':
