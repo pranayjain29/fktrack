@@ -307,7 +307,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
 
     return all_data
 
-async def scrape_pids(query, pages):
+def scrape_pids(query, pages):
     base_url = "https://www.flipkart.com/search"
     pids = []
     sponsored_status = []
@@ -315,46 +315,43 @@ async def scrape_pids(query, pages):
     rank = []
     counter=0
 
-    async with aiohttp.ClientSession() as session:
-        # Create a list of tasks for fetching all pages concurrently
-        tasks = [fetch(session, f"https://www.flipkart.com/search?q={urllib.parse.quote(query)}&page={page}") for page in range(1, pages + 1)]
-        logging.info(tasks)
-        responses = await asyncio.gather(*tasks)
-        total_pages = len(responses)
-
-        for idx, html in enumerate(responses):
-            if html is None:
-                logging.info(f"Skipping page: {idx + 1} due to fetch error.")
-                continue
-            progress = int((idx + 1) / total_pages * 100)
-            logging.info(f"Processing page: {idx + 1}/{total_pages}")
-            logging.info(f"Progress: {progress}%")
-
-            soup = BeautifulSoup(html, 'html.parser')
-            logging.info(soup)
-            # Find all product links
-            product_elements = soup.find_all('a', class_='CGtC98')
-            product_urls = ["https://www.flipkart.com" + elem['href'] for elem in product_elements if 'href' in elem.attrs]
-            logging.info(f"URLS: {product_urls}")
+    for page in range(1, pages + 1):
+        url = f"{base_url}?q={urllib.parse.quote(query)}&page={page}"
+        try:
+            response = requests.get(url, headers={'User-Agent': random.choice(user_agents)})
+            response.raise_for_status()
+            html = response.text
+        except requests.RequestException as e:
+            logging.error(f"Error fetching page {page}: {e}")
+            continue
             
-            if (not product_urls):
-                logging.info("Wrong layout")
-                return [],[],[],[]
+        progress = int(page / pages * 100)
+        logging.info(f"Progress: {progress}%")
+        soup = BeautifulSoup(html, 'html.parser')
+        logging.info(soup)
+        # Find all product links
+        product_elements = soup.find_all('a', class_='CGtC98')
+        product_urls = ["https://www.flipkart.com" + elem['href'] for elem in product_elements if 'href' in elem.attrs]
+        logging.info(f"URLS: {product_urls}")
+            
+        if (not product_urls):
+            logging.info("Wrong layout")
+            return [],[],[],[]
                 
             
-            for elem in product_elements:
-                pid = extract_pid(elem['href'])
-                if pid:
-                    counter += 1
-                    pids.append(pid)
-                    is_sponsored = 'Yes' if elem.find('div', class_='f8qK5m') else 'No'
-                    sponsored_status.append(is_sponsored)   
-                    paging.append(idx+1)
-                    rank.append(counter)
+        for elem in product_elements:
+            pid = extract_pid(elem['href'])
+            if pid:
+                counter += 1
+                pids.append(pid)
+                is_sponsored = 'Yes' if elem.find('div', class_='f8qK5m') else 'No'
+                sponsored_status.append(is_sponsored)   
+                paging.append(idx+1)
+                rank.append(counter)
     
     return pids, sponsored_status, paging, rank
 
-async def scrape_pids2(query, pages):
+def scrape_pids2(query, pages):
     base_url = "https://www.flipkart.com/search"
     pids = []
     sponsored_status = []
@@ -362,35 +359,32 @@ async def scrape_pids2(query, pages):
     rank = []
     counter=0
 
-    async with aiohttp.ClientSession() as session:
-        # Create a list of tasks for fetching all pages concurrently
-        tasks = [fetch(session, f"{base_url}?q={urllib.parse.quote(query)}&page={page}") for page in range(1, pages + 1)]
-        responses = await asyncio.gather(*tasks)
-        total_pages = len(responses)
-
-        for idx, html in enumerate(responses):
-            if html is None:
-                logging.info(f"Skipping page: {idx + 1} due to fetch error.")
-                continue
-            progress = int((idx + 1) / total_pages * 100)
-            logging.info(f"Processing page: {idx + 1}/{total_pages}")
-            logging.info(f"Progress: {progress}%")
-            logging.info(f"Layout2: {html}")
-            soup = BeautifulSoup(html, 'html.parser')
+    for page in range(1, pages + 1):
+        url = f"{base_url}?q={urllib.parse.quote(query)}&page={page}"
+        try:
+            response = requests.get(url, headers={'User-Agent': random.choice(user_agents)})
+            response.raise_for_status()
+            html = response.text
+        except requests.RequestException as e:
+            logging.error(f"Error fetching page {page}: {e}")
+            continue
             
-            # Find all product links
-            product_elements = soup.find_all('div', attrs={'data-id': True})
+        progress = int(page / pages * 100)
+        logging.info(f"Progress: {progress}%")
+        logging.info(f"Layout2: {html}")
+        soup = BeautifulSoup(html, 'html.parser')
             
-            for elem in product_elements:
-                pid = elem.get('data-id')
-                if pid:
-                    counter += 1
-                    pids.append(pid)
-                    # Check if the product is sponsored
-                    is_sponsored = 'Yes' if elem.find('div', class_='xgS27m') else 'No'
-                    sponsored_status.append(is_sponsored)
-                    paging.append(idx+1)
-                    rank.append(counter)
+        product_elements = soup.find_all('div', attrs={'data-id': True})
+            
+        for elem in product_elements:
+            pid = elem.get('data-id')
+             if pid:
+                counter += 1
+                pids.append(pid)
+                is_sponsored = 'Yes' if elem.find('div', class_='xgS27m') else 'No'
+                sponsored_status.append(is_sponsored)
+                paging.append(idx+1)
+                rank.append(counter)
     
     return pids, sponsored_status, paging, rank
 
@@ -401,10 +395,10 @@ async def comp_scrape():
     all_data = []
     starttime = time.time()
 
-    pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
+    pids, sponsored_status, paging, rank = scrape_pids(query, pages)
     if not pids:
         logging.info("Empty pids1")
-        pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
+        pids, sponsored_status, paging, rank = scrape_pids2(query, pages)
 
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
     all_data.extend(scrape_tasks)
@@ -444,4 +438,4 @@ def download_file_comp():
     )
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    app.run(debug=True, port=5000)
