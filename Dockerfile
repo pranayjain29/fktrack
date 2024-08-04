@@ -31,4 +31,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code
 COPY . .
 
-CMD ["hypercorn", "app:app", "-b", "0.0.0.0:3000", "--graceful-timeout", "120", "--keep-alive", "5"]
+# Set the entry point for the container
+CMD ["gunicorn", "-w", "4", "-k", "gevent", "-b", "0.0.0.0:3000", "--timeout", "120", "app:app"]
