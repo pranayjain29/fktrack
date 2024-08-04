@@ -9,6 +9,7 @@ import time
 import random
 import urllib.parse
 import logging
+import os
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
