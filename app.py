@@ -424,12 +424,18 @@ async def comp_scrape():
     query = request.form['query']
     pages = int(request.form['num_pages'])
     all_data = []
+    repeat = 0
     starttime = time.time()
 
-    pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
-    if not pids:
-        pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
-
+    for repeat in range(3):
+        pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
+        if not pids:
+            pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
+        if pids:
+            break
+        else:
+            logging.info(repeat)
+    
     logging.info(f"Main func, pids: {pids}")
     # Call a function to scrape product details using pids
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
