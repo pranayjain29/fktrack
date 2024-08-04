@@ -9,6 +9,7 @@ import time
 import random
 import urllib.parse
 import logging
+import requests
 
 app = Flask(__name__)
 # Configure logging
