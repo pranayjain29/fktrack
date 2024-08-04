@@ -46,7 +46,7 @@ def extract_pid(url):
         return url.split('pid=')[-1].split('&')[0]
     except IndexError:
         return None
-'''
+
 async def fetch(session, url):
     headers = {
         'User-Agent': random.choice(user_agents)
@@ -54,21 +54,7 @@ async def fetch(session, url):
     
     async with session.get(url, headers=headers) as response:
             return await response.text()
-            '''
-
-async def fetch(session, url, retries=3):
-    headers = {'User-Agent': random.choice(user_agents)}
-    for attempt in range(retries):
-        try:
-            async with session.get(url, headers=headers) as response:
-                if response.status == 200:
-                    return await response.text()
-                else:
-                    logger.error(f"Failed to fetch {url}: {response.status}")
-        except Exception as e:
-            logger.error(f"Exception while fetching {url}: {e}")
-        await asyncio.sleep(2)  # Wait before retrying
-    return None
+            
     
 async def fetch_mob(session, url):
     headers = get_mobile_headers()
@@ -349,9 +335,11 @@ async def scrape_pids(query, pages):
             product_elements = soup.find_all('a', class_='CGtC98')
             product_urls = ["https://www.flipkart.com" + elem['href'] for elem in product_elements if 'href' in elem.attrs]
             logging.info(f"URLS: {product_urls}")
+            '''
             if (not product_urls):
                 print("Wrong layout")
                 return [],[],[],[]
+                '''
             
             for elem in product_elements:
                 pid = extract_pid(elem['href'])
