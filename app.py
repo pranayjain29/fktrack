@@ -1,4 +1,4 @@
-from quart import Quart, request, render_template, send_file, url_for, jsonify
+from flask import Flask, request, render_template, send_file, url_for, jsonify
 import pandas as pd
 import io
 import aiohttp
@@ -8,11 +8,8 @@ import re
 import time
 import random
 import urllib.parse
-import logging
 
-app = Quart(__name__)
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+app = Flask(__name__)
 
 user_agents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -188,15 +185,12 @@ async def scrape_flipkart_search(FSN_list):
     return df
 
 @app.route('/')
-async def index():
-    return await render_template('index.html')
+def index():
+    return render_template('index.html')
 
 @app.route('/scrape', methods=['POST'])
 async def scrape():
-    form = await request.form
-    # Access form data safely
-    asins = form.get('asins', '')
-    
+    asins = request.form['asins']
     FSN_list = asins.split()
 
     start_time = time.time()
@@ -204,7 +198,6 @@ async def scrape():
     end_time = time.time()
     run_time = end_time - start_time
 
-    logging.info(df.size)
     excel_file = io.BytesIO()
     df.to_excel(excel_file, index=False, sheet_name='Flipkart Prices')
     excel_file.seek(0)
@@ -213,16 +206,16 @@ async def scrape():
     with open(temp_file_path, 'wb') as f:
         f.write(excel_file.getbuffer())
 
-    return await render_template('index.html', run_time=run_time, download_link=url_for('download_file'))
+    return render_template('index.html', run_time=run_time, download_link=url_for('download_file'))
 
 
 @app.route('/download')
-async def download_file():
-    return await send_file(
+def download_file():
+    return send_file(
         'Flipkart_Price_scrapper.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        attachment_filename='Flipkart_Price_scrapper.xlsx'
+        download_name='Flipkart_Price_scrapper.xlsx'
     )
 
 async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_list):
@@ -405,17 +398,8 @@ async def scrape_pids2(query, pages):
 
 @app.route('/fetch_competitor_data', methods=['POST'])
 async def comp_scrape():
-    
-    form = await request.form  # Retrieve the form data
-    query = form.get('query', '')
-    pages_str = form.get('num_pages', '0')
-    pages = int(pages_str)  # Convert pages_str to integer
-
-    try:
-        pages = int(pages_str)
-    except ValueError:
-        pages = 0 
-        
+    query = request.form['query']
+    pages = int(request.form['num_pages'])
     all_data = []
     starttime = time.time()
 
@@ -440,25 +424,25 @@ async def comp_scrape():
     with open(temp_file_path, 'wb') as f:
         f.write(comp_excel_file.getvalue())
 
-    return await render_template('competitor_data.html', fetch_runtime=run_timee, fetch_download_link=url_for('download_file_comp'))
+    return render_template('competitor_data.html', fetch_runtime=run_timee, fetch_download_link=url_for('download_file_comp'))
 
 @app.route('/index2')
-async def index2():
-    return await render_template('competitor_data.html')
+def index2():
+    return render_template('competitor_data.html')
 
 @app.route('/self')
-async def self():
-    return await render_template('index.html')
+def self():
+    return render_template('index.html')
 
 @app.route('/download_file_comp')
-async def download_file_comp():
+def download_file_comp():
     temp_file_path = 'Flipkart_CompData_scrapper.xlsx'
-    return await send_file(
+    return send_file(
         temp_file_path,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        attachment_filename=temp_file_path
+        download_name=temp_file_path
     )
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
