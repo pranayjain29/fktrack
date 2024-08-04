@@ -8,13 +8,7 @@ import re
 import time
 import random
 import urllib.parse
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+from playwright.async_api import async_playwright
 
 
 app = Flask(__name__)
@@ -28,6 +22,7 @@ user_agents = [
 ]
 
 mobile_user_agents = ['Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1']
+
 
 def get_headers():
     return {
@@ -47,6 +42,7 @@ def extract_pid(url):
         return url.split('pid=')[-1].split('&')[0]
     except IndexError:
         return None
+
 
 async def fetch(session, url):
     headers = {
@@ -80,6 +76,14 @@ async def fetch_mob(session, url):
     except Exception as e:
         print(f"Error fetching {url}: {e}")
         return None
+
+
+async def fetch_page(url, context):
+    page = await context.new_page()
+    await page.goto(url)
+    content = await page.content()
+    await page.close()
+    return content
 
 def convert_to_int(value):
     try:
@@ -328,35 +332,32 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
 
     return all_data
 
-'''
+
 async def scrape_pids(query, pages):
     base_url = "https://www.flipkart.com/search"
     pids = []
     sponsored_status = []
     paging = []
     rank = []
-    counter=0
+    counter = 0
 
-    async with aiohttp.ClientSession() as session:
-        # Create a list of tasks for fetching all pages concurrently
-        tasks = [fetch(session, f"{base_url}?q={query}&page={page}") for page in range(1, pages + 1)]
-        responses = await asyncio.gather(*tasks)
-        total_pages = len(responses)
-
-        for idx, html in enumerate(responses):
-            progress = int((idx + 1) / total_pages * 100)
-            print(f"Processing page: {idx + 1}/{total_pages}")
-            print(f"Progress: {progress}%")
-
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(user_agent=random.choice(user_agents))
+        
+        for page in range(1, pages + 1):
+            url = f"{base_url}?q={query}&page={page}"
+            html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
 
             # Find all product links
             product_elements = soup.find_all('a', class_='CGtC98')
             product_urls = ["https://www.flipkart.com" + elem['href'] for elem in product_elements if 'href' in elem.attrs]
 
-            if (not product_urls):
+            if not product_urls:
                 print("Wrong layout")
-                return [],[],[],[]
+                await browser.close()
+                return [], [], [], []
             
             for elem in product_elements:
                 pid = extract_pid(elem['href'])
@@ -365,9 +366,11 @@ async def scrape_pids(query, pages):
                     pids.append(pid)
                     is_sponsored = 'Yes' if elem.find('div', class_='f8qK5m') else 'No'
                     sponsored_status.append(is_sponsored)   
-                    paging.append(idx+1)
+                    paging.append(page)
                     rank.append(counter)
-    
+
+        await browser.close()
+
     return pids, sponsored_status, paging, rank
 
 async def scrape_pids2(query, pages):
@@ -376,19 +379,15 @@ async def scrape_pids2(query, pages):
     sponsored_status = []
     paging = []
     rank = []
-    counter=0
+    counter = 0
 
-    async with aiohttp.ClientSession() as session:
-        # Create a list of tasks for fetching all pages concurrently
-        tasks = [fetch(session, f"{base_url}?q={urllib.parse.quote(query)}&page={page}") for page in range(1, pages + 1)]
-        responses = await asyncio.gather(*tasks)
-        total_pages = len(responses)
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(user_agent=random.choice(user_agents))
 
-        for idx, html in enumerate(responses):
-            progress = int((idx + 1) / total_pages * 100)
-            print(f"Processing page: {idx + 1}/{total_pages}")
-            print(f"Progress: {progress}%")
-
+        for page in range(1, pages + 1):
+            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page}"
+            html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
 
             # Find all product links
@@ -399,67 +398,15 @@ async def scrape_pids2(query, pages):
                 if pid:
                     counter += 1
                     pids.append(pid)
-                    # Check if the product is sponsored
                     is_sponsored = 'Yes' if elem.find('div', class_='xgS27m') else 'No'
-                    sponsored_status.append(is_sponsored)
-                    paging.append(idx+1)
-                    rank.append(counter)
-    
-    return pids, sponsored_status, paging, rank
-'''
-def scrape_pids_selenium(query, pages):
-    base_url = "https://www.flipkart.com/search"
-    pids = []
-    sponsored_status = []
-    paging = []
-    rank = []
-    counter = 0
-
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run in headless mode
-    chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
-    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
-    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
-
-    try:
-        for page in range(1, pages + 1):
-            url = f"{base_url}?q={query}&page={page}"
-            driver.get(url)
-
-            time.sleep(0.5)
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-            print(soup)
-            # Find all product elements
-            product_elements = soup.find_all('a', class_='CGtC98')
-            if not product_elements:
-                product_elements = soup.find_all('div', attrs={'data-id': True})
-
-            if not product_elements:
-                print("No products found or wrong layout")
-                continue
-
-            for elem in product_elements:
-                if 'href' in elem.attrs:
-                    pid = extract_pid(elem['href'])
-                else:
-                    pid = elem.get('data-id')
-                
-                if pid:
-                    counter += 1
-                    pids.append(pid)
-                    is_sponsored = 'Yes' if elem.find('div', class_='f8qK5m') or elem.find('div', class_='xgS27m') else 'No'
                     sponsored_status.append(is_sponsored)
                     paging.append(page)
                     rank.append(counter)
 
-            progress = int(page / pages * 100)
-            print(f"Processing page: {page}/{pages}")
-            print(f"Progress: {progress}%")
-    
-    finally:
-        driver.quit()
+        await browser.close()
 
     return pids, sponsored_status, paging, rank
+
 
 @app.route('/fetch_competitor_data', methods=['POST'])
 async def comp_scrape():
@@ -468,12 +415,11 @@ async def comp_scrape():
     all_data = []
     starttime = time.time()
 
-    pids, sponsored_status, paging, rank = scrape_pids_selenium(query, pages)
-    '''
+    pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
     if not pids:
         pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
-        '''
 
+    # Call a function to scrape product details using pids
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
     all_data.extend(scrape_tasks)
     endtime = time.time()
