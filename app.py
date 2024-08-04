@@ -8,12 +8,16 @@ import re
 import time
 import random
 import urllib.parse
-import logging
-import os
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 
 user_agents = [
@@ -45,14 +49,13 @@ def extract_pid(url):
         return None
 
 async def fetch(session, url):
-    time.sleep(random.uniform(0.5,0.5))
     headers = {
         'User-Agent': random.choice(user_agents),
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive'
     }
-   
+
     try:
         async with session.get(url, headers=headers) as response:
             if response.status == 200:
@@ -66,9 +69,7 @@ async def fetch(session, url):
         return None
     
 async def fetch_mob(session, url):
-    time.sleep(random.uniform(0.5,0.5))
     headers = get_mobile_headers()
-    
     try:
         async with session.get(url, headers=headers) as response:
             if response.status == 200:
@@ -139,6 +140,7 @@ async def scrape_flipkart_search(FSN_list):
         responses = await asyncio.gather(*tasks)
 
         for idx, html in enumerate(responses):
+            print(html)
             progress = int((idx + 1) / total_fsns * 100)
             print(f"Processing FSN: {FSN_list[idx]}")
             print(f"Progress: {progress}")
@@ -206,15 +208,11 @@ async def scrape():
     end_time = time.time()
     run_time = end_time - start_time
 
-    logging.info(f"shape: {df.shape}")
     excel_file = io.BytesIO()
     df.to_excel(excel_file, index=False, sheet_name='Flipkart Prices')
     excel_file.seek(0)
 
-    temp_file_path = 'Flipkart_Price_Scrapper.xlsx'
-    if os.path.exists(temp_file_path):
-        os.remove(temp_file_path)
-        
+    temp_file_path = 'Flipkart_Price_scrapper.xlsx'
     with open(temp_file_path, 'wb') as f:
         f.write(excel_file.getbuffer())
 
@@ -224,10 +222,10 @@ async def scrape():
 @app.route('/download')
 def download_file():
     return send_file(
-        'Flipkart_Price_Scrapper.xlsx',
+        'Flipkart_Price_scrapper.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name='Flipkart_Test.xlsx'
+        download_name='Flipkart_Price_scrapper.xlsx'
     )
 
 async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_list):
@@ -330,6 +328,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
 
     return all_data
 
+'''
 async def scrape_pids(query, pages):
     base_url = "https://www.flipkart.com/search"
     pids = []
@@ -407,6 +406,60 @@ async def scrape_pids2(query, pages):
                     rank.append(counter)
     
     return pids, sponsored_status, paging, rank
+'''
+def scrape_pids_selenium(query, pages):
+    base_url = "https://www.flipkart.com/search"
+    pids = []
+    sponsored_status = []
+    paging = []
+    rank = []
+    counter = 0
+
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode
+    chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
+    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
+    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
+
+    try:
+        for page in range(1, pages + 1):
+            url = f"{base_url}?q={query}&page={page}"
+            driver.get(url)
+
+            time.sleep(0.5)
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            print(soup)
+            # Find all product elements
+            product_elements = soup.find_all('a', class_='CGtC98')
+            if not product_elements:
+                product_elements = soup.find_all('div', attrs={'data-id': True})
+
+            if not product_elements:
+                print("No products found or wrong layout")
+                continue
+
+            for elem in product_elements:
+                if 'href' in elem.attrs:
+                    pid = extract_pid(elem['href'])
+                else:
+                    pid = elem.get('data-id')
+                
+                if pid:
+                    counter += 1
+                    pids.append(pid)
+                    is_sponsored = 'Yes' if elem.find('div', class_='f8qK5m') or elem.find('div', class_='xgS27m') else 'No'
+                    sponsored_status.append(is_sponsored)
+                    paging.append(page)
+                    rank.append(counter)
+
+            progress = int(page / pages * 100)
+            print(f"Processing page: {page}/{pages}")
+            print(f"Progress: {progress}%")
+    
+    finally:
+        driver.quit()
+
+    return pids, sponsored_status, paging, rank
 
 @app.route('/fetch_competitor_data', methods=['POST'])
 async def comp_scrape():
@@ -415,9 +468,11 @@ async def comp_scrape():
     all_data = []
     starttime = time.time()
 
-    pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
+    pids, sponsored_status, paging, rank = scrape_pids_selenium(query, pages)
+    '''
     if not pids:
         pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
+        '''
 
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
     all_data.extend(scrape_tasks)
