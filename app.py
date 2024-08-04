@@ -251,9 +251,16 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
             print(f"Progress: {progress}")
 
             html = html_responses[i]
+            
+            if html is None:
+                print(f"Skipping PID {pid} due to fetch error.")
+                continue
             soup = BeautifulSoup(html, 'html.parser')
 
             html_mob = html_mob_responses[i]
+            if html_mob is None:
+                print(f"Skipping MOB PID {pid} due to fetch error.")
+                continue
             soup_mob = BeautifulSoup(html_mob, 'html.parser') if html_mob else None
 
             effective_price = None
