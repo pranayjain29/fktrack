@@ -378,7 +378,7 @@ def scrape_pids2(query, pages):
             
         for elem in product_elements:
             pid = elem.get('data-id')
-             if pid:
+            if pid:
                 counter += 1
                 pids.append(pid)
                 is_sponsored = 'Yes' if elem.find('div', class_='xgS27m') else 'No'
