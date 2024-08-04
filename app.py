@@ -190,7 +190,7 @@ async def index():
 
 @app.route('/scrape', methods=['POST'])
 async def scrape():
-    asins = request.form['asins']
+    asins = await request.form['asins']
     FSN_list = asins.split()
 
     start_time = time.time()
@@ -398,8 +398,8 @@ async def scrape_pids2(query, pages):
 
 @app.route('/fetch_competitor_data', methods=['POST'])
 async def comp_scrape():
-    query = request.form['query']
-    pages = int(request.form['num_pages'])
+    query = await request.form['query']
+    pages = await int(request.form['num_pages'])
     all_data = []
     starttime = time.time()
 
