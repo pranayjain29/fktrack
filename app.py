@@ -9,10 +9,10 @@ import time
 import random
 import urllib.parse
 from playwright.async_api import async_playwright
-
+import logging
 
 app = Flask(__name__)
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 user_agents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -58,7 +58,7 @@ async def fetch(session, url):
                 return await response.text()
             else:
                 content = await response.text()
-                print(f"Failed to fetch {url}. Status code: {response.status}. Response: {content}")
+                print(f"Failed to fetch {url}. Status code: {response.status}")
                 return None
     except Exception as e:
         print(f"Error fetching {url}: {e}")
@@ -370,6 +370,7 @@ async def scrape_pids(query, pages):
                     rank.append(counter)
 
         await browser.close()
+        logging.info(pids)
 
     return pids, sponsored_status, paging, rank
 
@@ -404,6 +405,7 @@ async def scrape_pids2(query, pages):
                     rank.append(counter)
 
         await browser.close()
+        logging.info(pids)
 
     return pids, sponsored_status, paging, rank
 
