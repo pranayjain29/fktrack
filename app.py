@@ -335,11 +335,11 @@ async def scrape_pids(query, pages):
             product_elements = soup.find_all('a', class_='CGtC98')
             product_urls = ["https://www.flipkart.com" + elem['href'] for elem in product_elements if 'href' in elem.attrs]
             logging.info(f"URLS: {product_urls}")
-            '''
+            
             if (not product_urls):
-                print("Wrong layout")
+                logging.info("Wrong layout")
                 return [],[],[],[]
-                '''
+                
             
             for elem in product_elements:
                 pid = extract_pid(elem['href'])
@@ -369,11 +369,11 @@ async def scrape_pids2(query, pages):
 
         for idx, html in enumerate(responses):
             if html is None:
-                print(f"Skipping page: {idx + 1} due to fetch error.")
+                logging.info(f"Skipping page: {idx + 1} due to fetch error.")
                 continue
             progress = int((idx + 1) / total_pages * 100)
-            print(f"Processing page: {idx + 1}/{total_pages}")
-            print(f"Progress: {progress}%")
+            logging.info(f"Processing page: {idx + 1}/{total_pages}")
+            logging.info(f"Progress: {progress}%")
 
             soup = BeautifulSoup(html, 'html.parser')
 
@@ -402,6 +402,7 @@ async def comp_scrape():
 
     pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
     if not pids:
+        logging.info("Empty pids1")
         pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
 
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
