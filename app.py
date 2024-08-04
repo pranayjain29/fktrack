@@ -402,8 +402,10 @@ async def scrape_pids2(query, pages):
 @app.route('/fetch_competitor_data', methods=['POST'])
 async def comp_scrape():
     
+    form = await request.form  # Retrieve the form data
     query = form.get('query', '')
     pages_str = form.get('num_pages', '0')
+    pages = int(pages_str)  # Convert pages_str to integer
 
     try:
         pages = int(pages_str)
