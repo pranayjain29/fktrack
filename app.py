@@ -353,6 +353,7 @@ async def scrape_pids(query, pages):
         context = await browser.new_context(user_agent=random.choice(user_agents))
         
         for page in range(1, pages + 1):
+            logging.info(f"Page: {page}")
             url = f"{base_url}?q={query}&page={page}"
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
@@ -379,7 +380,6 @@ async def scrape_pids(query, pages):
                     rank.append(counter)
 
         await browser.close()
-        logging.info(pids)
 
     return pids, sponsored_status, paging, rank
 
@@ -396,6 +396,7 @@ async def scrape_pids2(query, pages):
         context = await browser.new_context(user_agent=random.choice(user_agents))
 
         for page in range(1, pages + 1):
+            logging.info(f"Page: {page}")
             url = f"{base_url}?q={urllib.parse.quote(query)}&page={page}"
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
@@ -414,7 +415,6 @@ async def scrape_pids2(query, pages):
                     rank.append(counter)
 
         await browser.close()
-        logging.info(pids)
 
     return pids, sponsored_status, paging, rank
 
@@ -432,11 +432,11 @@ async def comp_scrape():
         if not pids:
             pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
         if pids:
+            logging.info(f"GOT PID: {pids}")
             break
         else:
-            logging.info(repeat)
+            logging.info(f"Repeat: {repeat}")
     
-    logging.info(f"Main func, pids: {pids}")
     # Call a function to scrape product details using pids
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
     all_data.extend(scrape_tasks)
