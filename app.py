@@ -376,10 +376,6 @@ async def scrape_pids(query, pages):
                     paging.append(page)
                     rank.append(counter)
                     
-            if not product_urls:
-                print("Wrong layout")
-                await browser.close()
-                return [], [], [], []
 
         await browser.close()
         logging.info(f"Sponsored list: {sponsored_status}")
