@@ -136,7 +136,7 @@ async def scrape_flipkart_search(FSN_list):
     progress = 0
     all_data = []
     total_fsns = len(FSN_list)
-
+    
     async with aiohttp.ClientSession() as session:
         tasks = [fetch(session, f"https://www.flipkart.com/product/p/itme?pid={FSN}") for FSN in FSN_list]
         responses = await asyncio.gather(*tasks)
@@ -234,7 +234,9 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
     global progress
     progress = 0
 
-    async with aiohttp.ClientSession() as session:
+    connector = aiohttp.TCPConnector(limit=20)  # Increase the number of connections
+    async with aiohttp.ClientSession(connector=connector) as session:
+        
         tasks = [fetch(session, f"https://www.flipkart.com/product/p/itme?pid={pid}") for pid in pid_list]
         html_responses = await asyncio.gather(*tasks)
 
@@ -347,7 +349,6 @@ async def scrape_pids(query, pages):
     paging = []
     rank = []
     counter = 0
-
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(user_agent=random.choice(user_agents))
