@@ -308,9 +308,12 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
             parameter_ratings = await extract_parameter_ratings(soup)
             star_ratings = await extract_star_ratings(soup)
 
+            DRR = round(first_number / second_number) if second_number != 0 else 0
+
             product_data = {
                 'Orders': first_number,
                 'Days': second_number,
+                'DRR':DRR,
                 'PID': pid,
                 'Sponsored': sponsored_list[i],
                 'Title': title,
