@@ -364,10 +364,6 @@ async def scrape_pids(query, pages):
 
             logging.info(f"Product URLs: {product_urls}")
             
-            if not product_urls:
-                print("Wrong layout")
-                await browser.close()
-                return [], [], [], []
             
             for elem in product_elements:
                 pid = extract_pid(elem['href'])
@@ -375,12 +371,18 @@ async def scrape_pids(query, pages):
                     counter += 1
                     pids.append(pid)
                     is_sponsored = 'Yes' if elem.find('div', class_='f8qK5m') else 'No'
+                    logging.info(f"Sponsored: {is_sponsored}")
                     sponsored_status.append(is_sponsored)   
                     paging.append(page)
                     rank.append(counter)
+                    
+            if not product_urls:
+                print("Wrong layout")
+                await browser.close()
+                return [], [], [], []
 
         await browser.close()
-
+        logging.info(f"Sponsored list: {sponsored_status}")
     return pids, sponsored_status, paging, rank
 
 async def scrape_pids2(query, pages):
