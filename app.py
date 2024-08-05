@@ -161,7 +161,7 @@ async def scrape_flipkart_search(FSN_list):
             title = div.find('p').text.strip() if div and div.find('p') else "Not found"
 
             price_element = soup.find('div', class_='Nx9bqj CxhGGd')
-            price = clean_price(price_element_text.strip()) if price_element else 'N/A'
+            price = clean_price(price_element.text.strip()) if price_element else 'N/A'
 
             sold_out_element = soup.find('div', class_='Z8JjpR')
             sold_out = sold_out_element.text.strip() if sold_out_element else 'Available'
@@ -287,7 +287,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
             brand = title.split()[0]
 
             price_element = soup.find('div', class_='Nx9bqj CxhGGd')
-            price = clean_price(price_element_text.strip()) if price_element else 'N/A'
+            price = clean_price(price_element.text.strip()) if price_element else 'N/A'
 
             sold_out_element = soup.find('div', class_='Z8JjpR')
             sold_out = sold_out_element.text.strip() if sold_out_element else 'Available'
