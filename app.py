@@ -96,6 +96,15 @@ def convert_to_int(value):
         print(f"Failed to convert value: {value}. Error: {e}")
         return 0
 
+def clean_price(price_text):
+    # Remove ₹ symbol and commas, then convert to float
+    cleaned_price = re.sub(r'[₹,]', '', price_text)
+    try:
+        price = float(cleaned_price)
+    except ValueError:
+        price = 'N/A'
+    return price
+
 async def extract_star_ratings(soup):
     star_ratings = {'5_star': '0', '4_star': '0', '3_star': '0', '2_star': '0', '1_star': '0'}
     try:
@@ -152,7 +161,7 @@ async def scrape_flipkart_search(FSN_list):
             title = div.find('p').text.strip() if div and div.find('p') else "Not found"
 
             price_element = soup.find('div', class_='Nx9bqj CxhGGd')
-            price = price_element.text.strip() if price_element else 'N/A'
+            price = clean_price(price_element_text.strip()) if price_element else 'N/A'
 
             sold_out_element = soup.find('div', class_='Z8JjpR')
             sold_out = sold_out_element.text.strip() if sold_out_element else 'Available'
@@ -234,7 +243,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
     global progress
     progress = 0
 
-    connector = aiohttp.TCPConnector(limit=20)  # Increase the number of connections
+    connector = aiohttp.TCPConnector(limit=30)  # Increase the number of connections
     async with aiohttp.ClientSession(connector=connector) as session:
         
         tasks = [fetch(session, f"https://www.flipkart.com/product/p/itme?pid={pid}") for pid in pid_list]
@@ -262,15 +271,6 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
                 continue
             soup_mob = BeautifulSoup(html_mob, 'html.parser') if html_mob else None
 
-            effective_price = None
-            if soup_mob:
-                html_content = soup_mob.prettify()
-                price_pattern = r'([\w\s]*?)\s*₹(\d{1,3}(?:,\d{3})*|\d+)'
-                matches = re.findall(price_pattern, html_content)
-                for preceding_text, price in matches:
-                    if not preceding_text.strip():
-                        effective_price = float(price.replace(',', ''))
-
             first_number = second_number = 0
             if soup_mob:
                 div_mob = soup_mob.find('div', class_='r-rjixqe')
@@ -287,7 +287,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
             brand = title.split()[0]
 
             price_element = soup.find('div', class_='Nx9bqj CxhGGd')
-            price = price_element.text.strip() if price_element else 'N/A'
+            price = clean_price(price_element_text.strip()) if price_element else 'N/A'
 
             sold_out_element = soup.find('div', class_='Z8JjpR')
             sold_out = sold_out_element.text.strip() if sold_out_element else 'Available'
@@ -311,17 +311,17 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
             star_ratings = await extract_star_ratings(soup)
 
             DRR = round(first_number / second_number) if second_number != 0 else 0
+            Monthly_Revenue = round(DRR*30.5*price)
 
             product_data = {
-                'Orders': first_number,
-                'Days': second_number,
-                'DRR':DRR,
+                
                 'PID': pid,
                 'Sponsored': sponsored_list[i],
                 'Title': title,
                 'Brand': brand,
                 'Price': price,
-                'Effective Price': effective_price,
+                'DRR':DRR,
+                'Approx_Monthly_Revenue': Monthly_Revenue,
                 'Rating': rating,
                 'Rating Count': rating_count,
                 'Review Count': review_count,
@@ -334,7 +334,9 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
                 '3 Star Ratings': star_ratings.get('3_star', '0'),
                 '2 Star Ratings': star_ratings.get('2_star', '0'),
                 '1 Star Ratings': star_ratings.get('1_star', '0'),
-                **parameter_ratings
+                **parameter_ratings,
+                'Orders': first_number,
+                'Days': second_number,
             }
 
             all_data.append(product_data)
