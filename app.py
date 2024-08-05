@@ -276,8 +276,8 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
                     text_content = ' '.join(span.get_text() for span in div_mob.find_all('span'))
                     numbers = re.findall(r'\d{1,3}(?:,\d{3})*|\d+', text_content)
                     if numbers:
-                        first_number = numbers[0].replace(',', '')
-                        second_number = numbers[1]
+                        first_number = int(numbers[0].replace(',', ''))
+                        second_number = int(numbers[1])
 
             div = soup.find('div', class_='KalC6f')
             title = div.find('p').text.strip() if div and div.find('p') else "Not found"
@@ -427,7 +427,7 @@ async def comp_scrape():
     repeat = 0
     starttime = time.time()
 
-    for repeat in range(3):
+    for repeat in range(5):
         pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
         if not pids:
             pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
