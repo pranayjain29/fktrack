@@ -373,13 +373,16 @@ async def scrape_pids(query, pages):
                     local_sponsored_status.append(is_sponsored)
                     local_paging.append(page_num)
                     local_rank.append(len(local_rank) + 1)
-
+                    
+            logging.info(f"Inside first local pids: {local_pids}")
             return local_pids, local_sponsored_status, local_paging, local_rank
 
         tasks = [fetch_page_data(page) for page in range(1, pages + 1)]
         results = await asyncio.gather(*tasks)
 
         for result in results:
+            if not result[0]:
+                [],[],[],[]
             pids.extend(result[0])
             sponsored_status.extend(result[1])
             paging.extend(result[2])
@@ -417,7 +420,8 @@ async def scrape_pids2(query, pages):
                     local_sponsored_status.append(is_sponsored)
                     local_paging.append(page_num)
                     local_rank.append(len(local_rank) + 1)
-
+                    
+            logging.info(f"Inside second local pids: {local_pids}")
             return local_pids, local_sponsored_status, local_paging, local_rank
 
         tasks = [fetch_page_data(page) for page in range(1, pages + 1)]
