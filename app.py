@@ -350,70 +350,82 @@ async def scrape_pids(query, pages):
     sponsored_status = []
     paging = []
     rank = []
-    counter = 0
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(user_agent=random.choice(user_agents))
-        
-        for page in range(1, pages + 1):
-            logging.info(f"Page: {page}")
-            url = f"{base_url}?q={query}&page={page}"
+
+        async def fetch_page_data(page_num):
+            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}"
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
-            
-            # Find all product links
-            product_elements = soup.find_all('a', class_='CGtC98')
-            product_urls = ["https://www.flipkart.com" + elem['href'] for elem in product_elements if 'href' in elem.attrs]
 
-            logging.info(f"Product URLs: {product_urls}")
-            
-            
+            product_elements = soup.find_all('a', class_='CGtC98')
+            local_pids, local_sponsored_status, local_paging, local_rank = [], [], [], []
+
             for elem in product_elements:
                 pid = extract_pid(elem['href'])
                 if pid:
-                    counter += 1
-                    pids.append(pid)
+                    local_pids.append(pid)
                     is_sponsored = 'Yes' if elem.find('div', class_='f8qK5m') else 'No'
-                    logging.info(f"Sponsored: {is_sponsored}")
-                    sponsored_status.append(is_sponsored)   
-                    paging.append(page)
-                    rank.append(counter)
-                    
+                    local_sponsored_status.append(is_sponsored)
+                    local_paging.append(page_num)
+                    local_rank.append(len(local_rank) + 1)
+
+            return local_pids, local_sponsored_status, local_paging, local_rank
+
+        tasks = [fetch_page_data(page) for page in range(1, pages + 1)]
+        results = await asyncio.gather(*tasks)
+
+        for result in results:
+            pids.extend(result[0])
+            sponsored_status.extend(result[1])
+            paging.extend(result[2])
+            rank.extend(result[3])
 
         await browser.close()
-        logging.info(f"Sponsored list: {sponsored_status}")
+
     return pids, sponsored_status, paging, rank
 
 async def scrape_pids2(query, pages):
+    
     base_url = "https://www.flipkart.com/search"
     pids = []
     sponsored_status = []
     paging = []
     rank = []
-    counter = 0
-    logging.info(f"Inside 2")
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(user_agent=random.choice(user_agents))
 
-        for page in range(1, pages + 1):
-            logging.info(f"Page: {page}")
-            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page}"
+        async def fetch_page_data(page_num):
+            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}"
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
 
-            # Find all product links
             product_elements = soup.find_all('div', attrs={'data-id': True})
-            
+            local_pids, local_sponsored_status, local_paging, local_rank = [], [], [], []
+
             for elem in product_elements:
                 pid = elem.get('data-id')
                 if pid:
-                    counter += 1
-                    pids.append(pid)
+                    local_pids.append(pid)
                     is_sponsored = 'Yes' if elem.find('div', class_='xgS27m') else 'No'
-                    sponsored_status.append(is_sponsored)
-                    paging.append(page)
-                    rank.append(counter)
+                    local_sponsored_status.append(is_sponsored)
+                    local_paging.append(page_num)
+                    local_rank.append(len(local_rank) + 1)
+
+            return local_pids, local_sponsored_status, local_paging, local_rank
+
+        tasks = [fetch_page_data(page) for page in range(1, pages + 1)]
+        results = await asyncio.gather(*tasks)
+
+        for result in results:
+            pids.extend(result[0])
+            sponsored_status.extend(result[1])
+            paging.extend(result[2])
+            rank.extend(result[3])
 
         await browser.close()
 
