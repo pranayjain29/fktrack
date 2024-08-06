@@ -382,7 +382,7 @@ async def scrape_pids(query, pages):
 
         for result in results:
             if not result[0]:
-                [],[],[],[]
+                return [],[],[],[]
             pids.extend(result[0])
             sponsored_status.extend(result[1])
             paging.extend(result[2])
@@ -428,6 +428,8 @@ async def scrape_pids2(query, pages):
         results = await asyncio.gather(*tasks)
 
         for result in results:
+            if not result[0]:
+                return [],[],[],[]
             pids.extend(result[0])
             sponsored_status.extend(result[1])
             paging.extend(result[2])
