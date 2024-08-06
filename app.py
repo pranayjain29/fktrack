@@ -456,7 +456,7 @@ async def comp_scrape():
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
     all_data.extend(scrape_tasks)
     endtime = time.time()
-    run_timee = endtime - starttime
+    run_timee = endtime - start_time
 
     df = pd.DataFrame(all_data)
     print(df.shape)
