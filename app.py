@@ -375,7 +375,7 @@ async def scrape_pids(query, pages):
                     local_rank.append(len(local_rank) + 1)
                     
             if not local_pids and repeat<4:
-                return fetch_page_data(page_num, repeat+1)
+                return await fetch_page_data(page_num, repeat+1)
             return local_pids, local_sponsored_status, local_paging, local_rank
 
         tasks = [fetch_page_data(page) for page in range(1, pages + 1)]
@@ -424,7 +424,7 @@ async def scrape_pids2(query, pages):
                     
             logging.info(f"Inside second local pids: {local_pids}")
             if not local_pids and repeat<4:
-                return fetch_page_data(page_num, repeat+1)
+                return await fetch_page_data(page_num, repeat+1)
             return local_pids, local_sponsored_status, local_paging, local_rank
 
         tasks = [fetch_page_data(page) for page in range(1, pages + 1)]
