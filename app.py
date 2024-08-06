@@ -355,7 +355,7 @@ async def scrape_pids(query, pages):
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         
-        async def fetch_page_data(page_num):
+        async def fetch_page_data(page_num, repeat = 0):
             context = await browser.new_context(user_agent=random.choice(user_agents))
             url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}"
             logging.info(f"Inside first url: {url}")
@@ -374,7 +374,8 @@ async def scrape_pids(query, pages):
                     local_paging.append(page_num)
                     local_rank.append(len(local_rank) + 1)
                     
-            logging.info(f"Inside first local pids: {local_pids}")
+            if not local_pids and repeat<4:
+                return fetch_page_data(page_num, repeat+1)
             return local_pids, local_sponsored_status, local_paging, local_rank
 
         tasks = [fetch_page_data(page) for page in range(1, pages + 1)]
@@ -403,7 +404,7 @@ async def scrape_pids2(query, pages):
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
 
-        async def fetch_page_data(page_num):
+        async def fetch_page_data(page_num, repeat = 0):
             context = await browser.new_context(user_agent=random.choice(user_agents))
             url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}"
             html = await fetch_page(url, context)
@@ -422,6 +423,8 @@ async def scrape_pids2(query, pages):
                     local_rank.append(len(local_rank) + 1)
                     
             logging.info(f"Inside second local pids: {local_pids}")
+            if not local_pids and repeat<4:
+                return fetch_page_data(page_num, repeat+1)
             return local_pids, local_sponsored_status, local_paging, local_rank
 
         tasks = [fetch_page_data(page) for page in range(1, pages + 1)]
@@ -450,15 +453,13 @@ async def comp_scrape():
     all_data = []
     repeat = 0
 
-    for repeat in range(5):
-        pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
-        if not pids:
-            pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
-        if pids:
-            logging.info(f"GOT PID: {pids}")
-            break
-        else:
-            logging.info(f"Repeat: {repeat}")
+    pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
+    if not pids:
+        pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
+    if pids:
+        logging.info(f"GOT PID: {pids}")
+        break
+
     
     # Call a function to scrape product details using pids
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
