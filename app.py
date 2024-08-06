@@ -210,10 +210,11 @@ def index():
 
 @app.route('/scrape', methods=['POST'])
 async def scrape():
+    
+    start_time = time.time()
     asins = request.form['asins']
     FSN_list = asins.split()
-
-    start_time = time.time()
+    
     df = await scrape_flipkart_search(FSN_list)
     end_time = time.time()
     run_time = end_time - start_time
@@ -434,11 +435,12 @@ async def scrape_pids2(query, pages):
 
 @app.route('/fetch_competitor_data', methods=['POST'])
 async def comp_scrape():
+
+    start_time = time.time()
     query = request.form['query']
     pages = int(request.form['num_pages'])
     all_data = []
     repeat = 0
-    starttime = time.time()
 
     for repeat in range(5):
         pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
