@@ -354,9 +354,9 @@ async def scrape_pids(query, pages):
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(user_agent=random.choice(user_agents))
-
+        
         async def fetch_page_data(page_num):
+            context = await browser.new_context(user_agent=random.choice(user_agents))
             url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}"
             logging.info(f"Inside first url: {url}")
             html = await fetch_page(url, context)
@@ -402,9 +402,9 @@ async def scrape_pids2(query, pages):
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(user_agent=random.choice(user_agents))
 
         async def fetch_page_data(page_num):
+            context = await browser.new_context(user_agent=random.choice(user_agents))
             url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}"
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
