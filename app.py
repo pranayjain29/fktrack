@@ -173,7 +173,7 @@ async def scrape_flipkart_search(FSN_list):
             review = review_element.text.strip() if review_element else 'N/A'
 
             rating_count = review_count = 0
-           match = re.search(r'(\d{1,2}(?:,\d{2})*(?:,\d{3})*|\d+)\s*Ratings\s*&\s*(\d{1,2}(?:,\d{2})*(?:,\d{3})*|\d+)\s*Reviews', review)
+            match = re.search(r'(\d{1,2}(?:,\d{2})*(?:,\d{3})*|\d+)\s*Ratings\s*&\s*(\d{1,2}(?:,\d{2})*(?:,\d{3})*|\d+)\s*Reviews', review)
 
             if match:
                 rating_count = int(match.group(1).replace(',', ''))
