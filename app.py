@@ -456,11 +456,9 @@ async def comp_scrape():
     pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
     if not pids:
         pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
-    if pids:
-        logging.info(f"GOT PID: {pids}")
-        break
-
     
+    logging.info(f"GOT PID: {pids}")
+
     # Call a function to scrape product details using pids
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
     all_data.extend(scrape_tasks)
