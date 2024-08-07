@@ -182,18 +182,27 @@ async def scrape_flipkart_search(FSN_list):
             seller_element = soup.find('div', id='sellerName')
             seller_name = seller_element.text.strip() if seller_element else 'N/A'
 
+            seller_rating = 0.0
+            if seller_name != 'N/A' and any(char.isdigit() for char in seller_name):
+                try:
+                    seller_rating = float(''.join(filter(lambda x: x.isdigit() or x == '.', seller_name.split()[-1])))
+                    seller_name = seller_name[:seller_name.rfind(str(seller_rating))]
+                except ValueError:
+                    pass
+
             parameter_ratings = await extract_parameter_ratings(soup)
             star_ratings = await extract_star_ratings(soup)
 
             all_data.append({
                 'FSN': FSN_list[idx],
-                'TITLE': title,
+                'Title': title,
                 'Price': price,
                 'Ratings': rating,
                 'Rating Count': rating_count,
                 'Review Count': review_count,
-                'SOLD OUT': sold_out,
-                'SELLER NAME': seller_name,
+                'Availability': sold_out,
+                'Seller Name': seller_name,
+                'Seller Rating' : seller_rating,
                 '5 Star Ratings': star_ratings.get('5_star', '0'),
                 '4 Star Ratings': star_ratings.get('4_star', '0'),
                 '3 Star Ratings': star_ratings.get('3_star', '0'),
@@ -309,6 +318,14 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
             seller_element = soup.find('div', id='sellerName')
             seller_name = seller_element.text.strip() if seller_element else 'N/A'
 
+            seller_rating = 0.0
+            if seller_name != 'N/A' and any(char.isdigit() for char in seller_name):
+                try:
+                    seller_rating = float(''.join(filter(lambda x: x.isdigit() or x == '.', seller_name.split()[-1])))
+                    seller_name = seller_name[:seller_name.rfind(str(seller_rating))]
+                except ValueError:
+                    pass
+
             parameter_ratings = await extract_parameter_ratings(soup)
             star_ratings = await extract_star_ratings(soup)
 
@@ -317,7 +334,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
 
             product_data = {
                 
-                'PID': pid,
+                'FSN': pid,
                 'Sponsored': sponsored_list[i],
                 'Title': title,
                 'Brand': brand,
@@ -329,6 +346,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
                 'Review Count': review_count,
                 'Sold Out': sold_out,
                 'Seller Name': seller_name,
+                'Seller Rating': seller_rating,
                 'Page': page_list[i],
                 'Rank': rank_list[i],
                 '5 Star Ratings': star_ratings.get('5_star', '0'),
@@ -358,7 +376,7 @@ async def scrape_pids(query, pages):
         
         async def fetch_page_data(page_num, repeat = 0):
             context = await browser.new_context(user_agent=random.choice(user_agents))
-            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}"
+            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=popularity"
             logging.info(f"Inside first url: {url}")
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
@@ -405,7 +423,7 @@ async def scrape_pids2(query, pages):
 
         async def fetch_page_data(page_num, repeat = 0):
             context = await browser.new_context(user_agent=random.choice(user_agents))
-            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}"
+            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=popularity"
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
 
