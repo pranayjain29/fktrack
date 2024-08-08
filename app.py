@@ -375,6 +375,7 @@ async def scrape_pids(query, pages):
         browser = await p.chromium.launch(headless=True)
         
         async def fetch_page_data(page_num, repeat = 0):
+            counter = 0
             context = await browser.new_context(user_agent=random.choice(user_agents))
             url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=popularity"
             logging.info(f"Inside first url: {url}")
@@ -386,14 +387,15 @@ async def scrape_pids(query, pages):
 
             for elem in product_elements:
                 pid = extract_pid(elem['href'])
+                counter += 1
                 if pid:
                     local_pids.append(pid)
                     is_sponsored = 'Yes' if elem.find('div', class_='f8qK5m') else 'No'
                     local_sponsored_status.append(is_sponsored)
                     local_paging.append(page_num)
-                    local_rank.append(len(local_rank) + 1)
+                    local_rank.append(counter)
                     
-            if not local_pids and repeat<4:
+            if not local_pids and repeat<5:
                 return await fetch_page_data(page_num, repeat+1)
             return local_pids, local_sponsored_status, local_paging, local_rank
 
@@ -422,6 +424,7 @@ async def scrape_pids2(query, pages):
         browser = await p.chromium.launch(headless=True)
 
         async def fetch_page_data(page_num, repeat = 0):
+            counter = 0
             context = await browser.new_context(user_agent=random.choice(user_agents))
             url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=popularity"
             html = await fetch_page(url, context)
@@ -432,15 +435,16 @@ async def scrape_pids2(query, pages):
 
             for elem in product_elements:
                 pid = elem.get('data-id')
+                counter += 1
                 if pid:
                     local_pids.append(pid)
                     is_sponsored = 'Yes' if elem.find('div', class_='xgS27m') else 'No'
                     local_sponsored_status.append(is_sponsored)
                     local_paging.append(page_num)
-                    local_rank.append(len(local_rank) + 1)
+                    local_rank.append(counter)
                     
             logging.info(f"Inside second local pids: {local_pids}")
-            if not local_pids and repeat<4:
+            if not local_pids and repeat<5:
                 return await fetch_page_data(page_num, repeat+1)
             return local_pids, local_sponsored_status, local_paging, local_rank
 
@@ -472,7 +476,7 @@ async def comp_scrape():
     if not pids:
         pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
     
-    logging.info(f"GOT PID: {pids}")
+    logging.info(f"GOT PID, RANK: {pids}, {rank}")
 
     # Call a function to scrape product details using pids
     scrape_tasks = await scrape_flipkart_product2(pids, sponsored_status, paging, rank)
