@@ -394,6 +394,7 @@ async def scrape_pids(query, pages):
                     local_paging.append(page_num)
                     local_rank.append(counter)
                     
+            await browser.close()
             if not local_pids and repeat<5:
                 return await fetch_page_data(page_num, repeat+1)
             return local_pids, local_sponsored_status, local_paging, local_rank
@@ -407,7 +408,7 @@ async def scrape_pids(query, pages):
             paging.extend(result[2])
             rank.extend(result[3])
 
-        await browser.close()
+        
         logging.info(f"Inside first pids: {pids}")
     return pids, sponsored_status, paging, rank
 
@@ -442,6 +443,7 @@ async def scrape_pids2(query, pages):
                     local_rank.append(counter)
                     
             logging.info(f"Inside second local pids: {local_pids}")
+            await browser.close()
             if not local_pids and repeat<5:
                 return await fetch_page_data(page_num, repeat+1)
             return local_pids, local_sponsored_status, local_paging, local_rank
@@ -455,7 +457,6 @@ async def scrape_pids2(query, pages):
             paging.extend(result[2])
             rank.extend(result[3])
 
-        await browser.close()
         logging.info(f"Inside second pids: {pids}")
 
     return pids, sponsored_status, paging, rank
