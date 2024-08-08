@@ -377,7 +377,7 @@ async def scrape_pids(query, pages):
             counter = 0
             browser = await p.chromium.launch(headless=True)
             context = await browser.new_context(user_agent=random.choice(user_agents))
-            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=popularity"
+            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=relevance"
             logging.info(f"Inside first url: {url}")
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
@@ -426,7 +426,7 @@ async def scrape_pids2(query, pages):
             counter = 0
             browser = await p.chromium.launch(headless=True)
             context = await browser.new_context(user_agent=random.choice(user_agents))
-            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=popularity"
+            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=relevance"
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
 
