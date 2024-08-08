@@ -145,8 +145,9 @@ async def scrape_flipkart_search(FSN_list):
     progress = 0
     all_data = []
     total_fsns = len(FSN_list)
-    
-    async with aiohttp.ClientSession() as session:
+
+    connector = aiohttp.TCPConnector(limit=30)  # Increase the number of connections
+    async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [fetch(session, f"https://www.flipkart.com/product/p/itme?pid={FSN}") for FSN in FSN_list]
         responses = await asyncio.gather(*tasks)
 
