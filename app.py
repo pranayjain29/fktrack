@@ -523,6 +523,8 @@ async def price_comparison():
     df.columns = ['FSN', 'Desired Price']
     FSN_list = df['FSN'].tolist()
     desired_prices = dict(zip(df['FSN'], df['Desired Price']))
+    logging.info(df)
+    logging.info(FSN_list)
     
     results = []
 
