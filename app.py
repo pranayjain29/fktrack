@@ -542,7 +542,7 @@ async def price_comparison():
                 desired_price = desired_prices.get(FSN_list[idxx])
                 diff = price_value - desired_price
 
-                if diff != 0 or status.lower() != 'Available':
+                if diff != 0 or status.lower() != 'available':
                     result = {
                         'FSN': FSN_list[idxx],
                         'Title': title,
