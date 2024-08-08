@@ -515,5 +515,67 @@ def download_file_comp():
         download_name=temp_file_path
     )
 
+@app.route('/price_comparison', methods=['POST'])
+async def price_comparison():
+    start_time = time.time()
+    file = request.files.get('file')
+    df = pd.read_excel(file, header=0)
+    df.columns = ['FSN', 'Desired Price']
+    FSN_list = df['FSN'].tolist()
+    desired_prices = dict(zip(df['FSN'], df['Desired Price']))
+    
+    results = []
+
+    df = await scrape_flipkart_search(FSN_list)
+    for idxx, row in df.iterrows():
+        price = row['Price']
+        status = row['Availability']
+        title = row['Title']
+        desired_price = float(desired_prices.get(FSN_list[idxx]))
+
+        if price is not None:
+            try:
+                price_value = float(price)
+                desired_price = desired_prices.get(FSN_list[idxx])
+                diff = price_value - desired_price
+
+                if diff != 0 or status.lower() != 'Available':
+                    result = {
+                        'FSN': FSN_list[idxx],
+                        'Title': title,
+                        'Price': price_value,
+                        'Desired Price':desired_price,
+                        'Availability': status,
+                        'Difference': diff
+                    }
+                    results.append(result)
+            except ValueError:
+                results.append(f"FSN: {FSN_list[idxx]}, Price parsing error")
+
+    df = pd.DataFrame(results)
+    end_time = time.time()
+    run_time = end_time - start_time
+
+    results_file = io.BytesIO()
+    with pd.ExcelWriter(results_file, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Flipkart Comparison Data')
+    results_file.seek(0)
+
+    temp_file_path = 'Flipkart_Comparison_Data.xlsx'
+    with open(temp_file_path, 'wb') as f:
+        f.write(results_file.getvalue())
+
+    df.to_csv('flipkart_comp_data.csv', index=False)
+    return render_template('index.html', run_time=run_time, download_link=url_for('download_file_comparison'))
+
+@app.route('/download_comparison')
+def download_file_comparison():
+    return send_file(
+        'Flipkart_Comparison_Data.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='Flipkart_Comparison_Data.xlsx'
+    )
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000, threaded=True)
