@@ -96,6 +96,28 @@
             </div>
             
             <div style="margin-top: 40px;"></div>
+
+            <div class="page" id="price-comparison">
+                <form action="/price_comparison" method="post" enctype="multipart/form-data" id="price-comparison-form">
+                    <div class="form-group">
+                        <label for="file">Upload Excel File (FSNs and Desired Prices):</label>
+                        <input type="file" class="form-control-file" id="file" name="file" required>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">Upload and Compare</button>
+                    </div>
+                </form>
+                
+                <div style="margin-top: 40px;"></div>
+                
+                {% if comparison_run_time %}
+                <div class="result-section text-center">
+                    <h4>Comparison Runtime:</h4>
+                    <p>{{ '{:.1f}'.format(comparison_run_time) }} seconds</p>
+                    <a href="{{ comparison_download_link }}" class="btn btn-success">Download Comparison Excel</a>
+                </div>
+                {% endif %}
+            </div>
                 
         </div>
     </div>
