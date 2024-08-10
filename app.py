@@ -784,6 +784,7 @@ def analysis():
 def download_graphs():
    
     global figures
+    logging.info(figures)
     buffer = io.BytesIO()
     
     with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as z:
