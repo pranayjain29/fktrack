@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, url_for, jsonify
+from flask import Flask, request, render_template, send_file, url_for, jsonify, send_file
 import pandas as pd
 import io
 import aiohttp
@@ -10,9 +10,26 @@ import random
 import urllib.parse
 from playwright.async_api import async_playwright
 import logging
+import matplotlib.pyplot as plt
+import plotly.express as px
+from flask_caching import Cache
+import dash
+from dash import dcc
+from dash import html
+from dash import Dash
+from dash.dependencies import Input, Output
+import zipfile
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+cache = Cache(config={'CACHE_TYPE': 'simple'})
+cache.init_app(app)
+dash_app = Dash(__name__, server=app, url_base_pathname='/dash/')
+figures = {}
+
+dash_app.layout = html.Div([
+    dcc.Graph(id='example-graph')
+])
 
 user_agents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -331,7 +348,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
             star_ratings = await extract_star_ratings(soup)
 
             DRR = round(first_number / second_number) if second_number != 0 else 0
-            Monthly_Revenue = round(DRR*30.5*price)
+            Weekly_Revenue = round(DRR*7*price)
 
             product_data = {
                 
@@ -341,7 +358,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
                 'Brand': brand,
                 'Price': price,
                 'DRR':DRR,
-                'Approx_Monthly_Revenue': Monthly_Revenue,
+                'Approx_Weekly_Revenue': Weekly_Revenue,
                 'Rating': rating,
                 'Rating Count': rating_count,
                 'Review Count': review_count,
@@ -365,7 +382,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
     return all_data
 
 
-async def scrape_pids(query, pages):
+async def scrape_pids(query, pages, sort_option):
     base_url = "https://www.flipkart.com/search"
     pids = []
     sponsored_status = []
@@ -377,7 +394,7 @@ async def scrape_pids(query, pages):
             counter = 0
             browser = await p.chromium.launch(headless=True)
             context = await browser.new_context(user_agent=random.choice(user_agents))
-            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=popularity"
+            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=sort_option"
             logging.info(f"Inside first url: {url}")
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
@@ -413,7 +430,7 @@ async def scrape_pids(query, pages):
         logging.info(f"Inside first pids: {pids}")
     return pids, sponsored_status, paging, rank
 
-async def scrape_pids2(query, pages):
+async def scrape_pids2(query, pages, sort_option):
     
     base_url = "https://www.flipkart.com/search"
     pids = []
@@ -426,7 +443,7 @@ async def scrape_pids2(query, pages):
             counter = 0
             browser = await p.chromium.launch(headless=True)
             context = await browser.new_context(user_agent=random.choice(user_agents))
-            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=popularity"
+            url = f"{base_url}?q={urllib.parse.quote(query)}&page={page_num}&sort=sort_option"
             html = await fetch_page(url, context)
             soup = BeautifulSoup(html, 'html.parser')
 
@@ -469,12 +486,14 @@ async def comp_scrape():
     start_time = time.time()
     query = request.form['query']
     pages = int(request.form['num_pages'])
+    sort_option = request.form['sort_option']
+    logging.info(sort_option)
     all_data = []
     repeat = 0
 
-    pids, sponsored_status, paging, rank = await scrape_pids(query, pages)
+    pids, sponsored_status, paging, rank = await scrape_pids(query, pages, sort_option)
     if not pids:
-        pids, sponsored_status, paging, rank = await scrape_pids2(query, pages)
+        pids, sponsored_status, paging, rank = await scrape_pids2(query, pages, sort_option)
     
     logging.info(f"GOT PID, RANK: {pids}, {rank}")
 
@@ -579,6 +598,215 @@ def download_file_comparison():
         as_attachment=True,
         download_name='Flipkart_Comparison_Data.xlsx'
     )
+
+
+
+def calculate_counts(df, column_name):
+        counts = df[column_name].value_counts().reset_index()
+        counts.columns = [column_name, 'count']
+        counts['Percentage'] = (counts['count'] / counts['count'].sum() * 100).round(1).astype(str) + '%'
+        return counts
+
+def calculate_metric(df, column_name, revenue_column):
+    revenue = df.groupby(column_name)[revenue_column].sum().reset_index()
+    revenue = revenue.sort_values(by=revenue_column, ascending=False)
+    revenue['Percentage'] = (revenue[revenue_column] / revenue[revenue_column].sum() * 100).round(1).astype(str) + '%'
+    return revenue
+
+def create_bar_chart(df, x_column, y_column, text_column, title):
+    fig = px.bar(
+        df,
+        x=x_column,
+        y=y_column,
+        text=text_column,
+        labels={x_column: x_column, y_column: y_column},
+        title=title,
+    )
+    fig.update_layout(
+        font=dict(family='Montserrat, sans-serif', size=12),
+        xaxis_title=None,
+        yaxis_title=None,
+        xaxis_tickangle=0,
+        margin=dict(l=0, r=0, t=40, b=0)
+    )
+    fig.update_traces(texttemplate='%{text}', textposition='outside')
+    return fig
+
+def generate_html(fig):
+    return fig.to_html(full_html=False, include_plotlyjs='cdn')
+
+def calculate_search_rank(df, page_column, rank_column):
+    df['search_rank'] = (df[page_column] - 1) * df[rank_column].max() + df[rank_column]
+    avg_search_rank = df.groupby('Brand')['search_rank'].mean().reset_index()
+    avg_search_rank['search_rank'] = (avg_search_rank['search_rank'] / avg_search_rank['search_rank'].max() * 100).round(1)
+    avg_search_rank = avg_search_rank.sort_values(by='search_rank', ascending=False).reset_index(drop=True)
+    return avg_search_rank
+
+def create_horizontal_bar_chart(df, x_column, y_column, title):
+    print(df)
+    # No need to sort here, use the sorted DataFrame as it is
+    fig = px.bar(
+        df,  # Use the sorted DataFrame
+        x=x_column,
+        y=y_column,
+        orientation='h',
+        labels={x_column: x_column, y_column: y_column},
+        title=title,
+    )
+    
+    # Set x-axis range from 0 to 100
+    fig.update_layout(
+        font=dict(family='Montserrat, sans-serif', size=12),
+        xaxis_title=None,
+        yaxis_title=None,
+        margin=dict(l=0, r=0, t=40, b=0),
+        xaxis=dict(range=[0, 100])  # Set x-axis range from 0 to 100
+    )
+    
+    fig.update_traces(
+        texttemplate='%{x:.1f}%',  # Add percentage symbol to the labels
+        textposition='outside'
+    )
+    
+    return fig
+
+
+
+def calculate_brand_percentage_by_page(df, page_column):
+    brand_percentage_by_page = (
+        df.groupby(['Brand', page_column])
+        .size()
+        .reset_index(name='count')
+    )
+    brand_percentage_by_page['Percentage'] = (
+        brand_percentage_by_page['count'] / brand_percentage_by_page.groupby(page_column)['count'].transform('sum') * 100
+    ).round(1).astype(str) + '%'
+    return brand_percentage_by_page
+
+def create_dash_layout(df):
+    unique_pages = sorted(df['Page'].unique())
+    
+    dash_app.layout = html.Div([
+        dcc.Dropdown(
+            id='page-dropdown',
+            options=[{'label': f'Page {i}', 'value': i} for i in unique_pages],
+            value=1,  # Default value
+            clearable=False
+        ),
+        dcc.Graph(id='bar-chart')
+    ])
+    
+    @dash_app.callback(
+        Output('bar-chart', 'figure'),
+        Input('page-dropdown', 'value')
+    )
+    def update_chart(selected_page):
+        filtered_df = df[df['Page'] == selected_page]
+        brand_counts = filtered_df['Brand'].value_counts().reset_index()
+        brand_counts.columns = ['Brand', 'count']
+        brand_counts['Percentage'] = (brand_counts['count'] / brand_counts['count'].sum() * 100).round(1).astype(str) + '%'
+        
+        # Sort the DataFrame in descending order by 'count'
+        brand_counts = brand_counts.sort_values(by='count', ascending=False)
+        
+        # Create the bar chart with explicitly sorted y-axis
+        fig = px.bar(
+            brand_counts,
+            x='count',
+            y='Brand',
+            orientation='h',
+            text='Percentage',
+            labels={'count': 'Count', 'Brand': 'Brand'},
+            title=f'Brand Distribution - Page {selected_page}'
+        )
+        
+        # Update layout to ensure y-axis is sorted correctly
+        fig.update_layout(
+            yaxis=dict(categoryorder='total ascending'),
+            font=dict(family='Montserrat, sans-serif', size=12),
+            xaxis_title=None,
+            yaxis_title=None,
+            margin=dict(l=0, r=0, t=40, b=0)
+        )
+        fig.update_traces(texttemplate='%{text}', textposition='outside')
+
+        global figures
+        figures['rank_by_page'] = fig
+        
+        return fig
+    
+def create_charts(df):
+    brand_counts = calculate_counts(df, 'Brand')
+    revenue_by_brand = calculate_metric(df, 'Brand', 'Weekly Revenue')
+    drr_by_brand = calculate_metric(df, 'Brand', 'DRR')
+    avg_search_rank = calculate_search_rank(df, 'Page', 'Rank')
+
+    fig1 = create_bar_chart(brand_counts, 'Brand', 'count', 'Percentage', 'Brand Distribution')
+    fig2 = create_bar_chart(revenue_by_brand, 'Brand', 'Weekly Revenue', 'Percentage', 'Weekly Revenue by Brand')
+    fig3 = create_bar_chart(drr_by_brand, 'Brand', 'DRR', 'Percentage', 'DRR by Brand')
+    fig_search_rank = create_horizontal_bar_chart(avg_search_rank, 'search_rank', 'Brand', 'Average Search Rank by Brand')
+
+    global figures
+    figures['brand_distribution'] = fig1
+    figures['weekly_revenue_by_brand'] = fig2
+    figures['drr_by_brand'] = fig3
+    figures['average_search_rank_by_brand'] = fig_search_rank
+
+    return fig1, fig2, fig3, fig_search_rank
+    
+
+
+@app.route('/analysis')
+def analysis():
+    global figures
+    # Read the DataFrame from the CSV file
+    df = pd.read_csv('flipkart_comp_data.csv')
+    df = df[df['Sponsored']=='No']
+    df.loc[df['Seller Rating'] <= 2.0, 'Weekly Revenue'] *= 0.5
+
+    df = df.drop_duplicates(subset='FSN', keep='first')
+    create_dash_layout(df)
+
+    fig1, fig2, fig3, fig_search_rank = create_charts(df)
+    
+
+    # Generate HTML for the plots
+    graph_html1 = generate_html(fig1)
+    graph_html2 = generate_html(fig2)
+    graph_html3 = generate_html(fig3)
+    graph_html4 = generate_html(fig_search_rank)
+
+    return render_template('analysis.html', graph_html1=graph_html1, graph_html2=graph_html2,graph_html3=graph_html3,graph_html4=graph_html4
+                           ,fetch_download_link=url_for('download_file_comp'), download_graphs=url_for('download_graphs'))
+
+@app.route('/download_graphs')
+def download_graphs():
+   
+    global figures
+    buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as z:
+        # List of figures to save
+        figs = [
+            ('brand_distribution.png', figures['brand_distribution']),
+            ('weekly_revenue_by_brand.png', figures['weekly_revenue_by_brand']),
+            ('drr_by_brand.png', figures['drr_by_brand']),
+            ('average_search_rank_by_brand.png', figures['average_search_rank_by_brand']),
+            ('rank_by_page.png', figures['rank_by_page'])
+        ]
+        
+        # Save each figure as an image and add to the ZIP file
+        for filename, fig in figs:
+            img_buf = io.BytesIO()
+            fig.write_image(img_buf, format='png')
+            img_buf.seek(0)
+            z.writestr(filename, img_buf.read())
+    
+    buffer.seek(0)
+    
+    # Return the ZIP file
+    return send_file(buffer, as_attachment=True, download_name='graphs.zip', mimetype='application/zip')
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000, threaded=True)
