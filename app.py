@@ -515,7 +515,7 @@ async def comp_scrape():
     with open(temp_file_path, 'wb') as f:
         f.write(comp_excel_file.getvalue())
 
-    return render_template('competitor_data.html', fetch_runtime=run_timee, fetch_download_link=url_for('download_file_comp'))
+    return render_template('competitor_data.html', fetch_runtime=run_timee, fetch_download_link=url_for('download_file_comp'), analysis_link=url_for('analysis'))
 
 @app.route('/index2')
 def index2():
