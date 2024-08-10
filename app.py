@@ -19,6 +19,9 @@ from dash import html
 from dash import Dash
 from dash.dependencies import Input, Output
 import zipfile
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -733,17 +736,22 @@ def create_dash_layout(df):
         return fig
     
 def create_charts(df):
-    global figures
     brand_counts = calculate_counts(df, 'Brand')
-    revenue_by_brand = calculate_metric(df, 'Brand', 'Approx_Weekly_Revenue')
+    revenue_by_brand = calculate_metric(df, 'Brand', 'Weekly Revenue')
     drr_by_brand = calculate_metric(df, 'Brand', 'DRR')
     avg_search_rank = calculate_search_rank(df, 'Page', 'Rank')
 
     fig1 = create_bar_chart(brand_counts, 'Brand', 'count', 'Percentage', 'Brand Distribution')
-    fig2 = create_bar_chart(revenue_by_brand, 'Brand', 'Approx_Weekly_Revenue', 'Percentage', 'Weekly Revenue by Brand')
+    fig2 = create_bar_chart(revenue_by_brand, 'Brand', 'Weekly Revenue', 'Percentage', 'Weekly Revenue by Brand')
     fig3 = create_bar_chart(drr_by_brand, 'Brand', 'DRR', 'Percentage', 'DRR by Brand')
     fig_search_rank = create_horizontal_bar_chart(avg_search_rank, 'search_rank', 'Brand', 'Average Search Rank by Brand')
 
+    fig1.write_image("brand_distribution.png")
+    fig2.write_image("weekly_revenue_by_brand.png")
+    fig3.write_image("drr_by_brand.png")
+    fig_search_rank.write_image("average_search_rank_by_brand.png")
+
+    global figures
     figures['brand_distribution'] = fig1
     figures['weekly_revenue_by_brand'] = fig2
     figures['drr_by_brand'] = fig3
@@ -775,34 +783,39 @@ def analysis():
     return render_template('analysis.html', graph_html1=graph_html1, graph_html2=graph_html2,graph_html3=graph_html3,graph_html4=graph_html4
                            ,fetch_download_link=url_for('download_file_comp'), download_graphs=url_for('download_graphs'))
 
+def create_pdf():
+    pdf_path = "charts.pdf"
+    c = canvas.Canvas(pdf_path, pagesize=letter)
+    width, height = letter
+
+    # Add images to PDF
+    images = [
+        ("brand_distribution.png", "Brand Distribution"),
+        ("weekly_revenue_by_brand.png", "Weekly Revenue by Brand"),
+        ("drr_by_brand.png", "DRR by Brand"),
+        ("average_search_rank_by_brand.png", "Average Search Rank by Brand")
+    ]
+
+    margin = 0.5 * inch
+    image_width = 7.5 * inch
+    image_height = 3 * inch
+    y = height - margin - image_height
+
+    for image, title in images:
+        if y < margin + image_height:
+            c.showPage()
+            y = height - margin - image_height
+        
+        c.drawString(margin, y + image_height + 10, title)  # Add title above the image
+        c.drawImage(image, margin, y, width=image_width, height=image_height, preserveAspectRatio=True)
+        y -= image_height + margin  # Move to the next position
+
+    c.save()
+
 @app.route('/download_graphs')
 def download_graphs():
-   
-    global figures
-    logging.info(figures)
-    buffer = io.BytesIO()
-    
-    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as z:
-        # List of figures to save
-        figs = [
-            ('brand_distribution.png', figures['brand_distribution']),
-            ('weekly_revenue_by_brand.png', figures['weekly_revenue_by_brand']),
-            ('drr_by_brand.png', figures['drr_by_brand']),
-            ('average_search_rank_by_brand.png', figures['average_search_rank_by_brand']),
-            ('rank_by_page.png', figures['rank_by_page'])
-        ]
-        
-        # Save each figure as an image and add to the ZIP file
-        for filename, fig in figs:
-            img_buf = io.BytesIO()
-            fig.write_image(img_buf, format='png')
-            img_buf.seek(0)
-            z.writestr(filename, img_buf.read())
-    
-    buffer.seek(0)
-    
-    # Return the ZIP file
-    return send_file(buffer, as_attachment=True, download_name='graphs.zip', mimetype='application/zip')
+    create_pdf()  # Generate the PDF with the graphs
+    return send_file('charts.pdf', as_attachment=True, download_name='charts.pdf', mimetype='application/pdf')
 
 
 if __name__ == '__main__':
