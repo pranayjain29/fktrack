@@ -21,3 +21,4 @@ matplotlib
 Flask-Caching
 dash
 zipfile36
+reportlab
