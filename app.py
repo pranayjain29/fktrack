@@ -738,12 +738,12 @@ def create_dash_layout(df):
     
 def create_charts(df):
     brand_counts = calculate_counts(df, 'Brand')
-    revenue_by_brand = calculate_metric(df, 'Brand', 'Weekly Revenue')
+    revenue_by_brand = calculate_metric(df, 'Brand', 'Approx_Weekly_Revenue')
     drr_by_brand = calculate_metric(df, 'Brand', 'DRR')
     avg_search_rank = calculate_search_rank(df, 'Page', 'Rank')
 
     fig1 = create_bar_chart(brand_counts, 'Brand', 'count', 'Percentage', 'Brand Distribution')
-    fig2 = create_bar_chart(revenue_by_brand, 'Brand', 'Weekly Revenue', 'Percentage', 'Weekly Revenue by Brand')
+    fig2 = create_bar_chart(revenue_by_brand, 'Brand', 'Approx_Weekly_Revenue', 'Percentage', 'Weekly Revenue by Brand')
     fig3 = create_bar_chart(drr_by_brand, 'Brand', 'DRR', 'Percentage', 'DRR by Brand')
     fig_search_rank = create_horizontal_bar_chart(avg_search_rank, 'search_rank', 'Brand', 'Average Search Rank by Brand')
 
@@ -763,7 +763,7 @@ def analysis():
     # Read the DataFrame from the CSV file
     df = pd.read_csv('flipkart_comp_data.csv')
     df = df[df['Sponsored']=='No']
-    df.loc[df['Seller Rating'] <= 2.0, 'Weekly Revenue'] *= 0.5
+    df.loc[df['Seller Rating'] <= 2.0, 'Approx_Weekly_Revenue'] *= 0.5
 
     df = df.drop_duplicates(subset='FSN', keep='first')
     create_dash_layout(df)
