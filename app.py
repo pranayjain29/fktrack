@@ -772,8 +772,6 @@ def analysis():
     graph_html3 = generate_html(fig3)
     graph_html4 = generate_html(fig_search_rank)
 
-    send_file(buffer, as_attachment=True, download_name='graphs.zip', mimetype='application/zip')
-
     return render_template('analysis.html', graph_html1=graph_html1, graph_html2=graph_html2,graph_html3=graph_html3,graph_html4=graph_html4
                            ,fetch_download_link=url_for('download_file_comp'), download_graphs=url_for('download_graphs'))
 
