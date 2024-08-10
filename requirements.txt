@@ -16,3 +16,8 @@ aiohttp
 quart
 Hypercorn
 playwright
+plotly
+matplotlib
+Flask-Caching
+dash
+zipfile36
