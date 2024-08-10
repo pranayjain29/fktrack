@@ -600,8 +600,6 @@ def download_file_comparison():
         download_name='Flipkart_Comparison_Data.xlsx'
     )
 
-
-
 def calculate_counts(df, column_name):
         counts = df[column_name].value_counts().reset_index()
         counts.columns = [column_name, 'count']
@@ -671,8 +669,6 @@ def create_horizontal_bar_chart(df, x_column, y_column, title):
     
     return fig
 
-
-
 def calculate_brand_percentage_by_page(df, page_column):
     brand_percentage_by_page = (
         df.groupby(['Brand', page_column])
@@ -737,6 +733,7 @@ def create_dash_layout(df):
         return fig
     
 def create_charts(df):
+    global figures
     brand_counts = calculate_counts(df, 'Brand')
     revenue_by_brand = calculate_metric(df, 'Brand', 'Approx_Weekly_Revenue')
     drr_by_brand = calculate_metric(df, 'Brand', 'DRR')
@@ -747,7 +744,6 @@ def create_charts(df):
     fig3 = create_bar_chart(drr_by_brand, 'Brand', 'DRR', 'Percentage', 'DRR by Brand')
     fig_search_rank = create_horizontal_bar_chart(avg_search_rank, 'search_rank', 'Brand', 'Average Search Rank by Brand')
 
-    global figures
     figures['brand_distribution'] = fig1
     figures['weekly_revenue_by_brand'] = fig2
     figures['drr_by_brand'] = fig3
@@ -755,7 +751,6 @@ def create_charts(df):
 
     return fig1, fig2, fig3, fig_search_rank
     
-
 
 @app.route('/analysis')
 def analysis():
@@ -785,7 +780,7 @@ def analysis():
 @app.route('/download_graphs')
 def download_graphs():
    
-    #global figures
+    global figures
     logging.info(figures)
     buffer = io.BytesIO()
     
