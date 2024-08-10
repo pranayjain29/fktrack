@@ -15,6 +15,11 @@
     <title>Competitor Data</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
     <link rel="stylesheet" href="css/style.css">
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Include Bootstrap JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
@@ -92,10 +97,21 @@
                         <label for="num_pages">No. of Pages:</label>
                         <input type="number" class="form-control" id="num_pages" name="num_pages" placeholder="Enter number of pages" required>
                     </div>
+                    <div class="form-group text-center">
+                        <label for="sort_option">Sort by:</label>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline-primary active">
+                                <input type="radio" name="sort_option" id="relevance" value="relevance" checked> Relevance
+                            </label>
+                            <label class="btn btn-outline-primary">
+                                <input type="radio" name="sort_option" id="popularity" value="popularity"> Popularity
+                            </label>
+                        </div>
+                    </div>
                     <div class="text-center">
                         <button type="submit" class="btn btn-primary">Fetch Data</button>
                     </div>
-                </form>
+                </form>                
                 
                 <div style="margin-top: 40px;"></div>
                 
@@ -104,6 +120,7 @@
                     <h4>Fetch Runtime:</h4>
                     <p>{{ '{:.1f}'.format(fetch_runtime) }} seconds</p>
                     <a href="{{ fetch_download_link }}" class="btn btn-success">Download Data</a>
+                    <a href="{{ analysis_link }}" class="btn btn-primary">Detailed Analysis</a>
                 </div>
                 {% endif %}
             </div>
@@ -115,3 +132,4 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-pzjw8f+ua7Kw1TIWw6tp+5cXy8V5pD0gD43fR0n8ZDzDAI7Bqhu5Opm6FfFOlbGgF" crossorigin="anonymous"></script>
 </body>
 </html>
+
