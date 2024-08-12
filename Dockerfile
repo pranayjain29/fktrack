@@ -40,4 +40,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set the entry point for the container
-CMD ["gunicorn", "-w", "8", "-k", "gevent", "-b", "0.0.0.0:3000", "--timeout", "200", "app:app"]
+CMD ["gunicorn", "-w", "12", "-k", "gevent", "-b", "0.0.0.0:3000", "--timeout", "200", "app:app"]
