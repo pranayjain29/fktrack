@@ -12,12 +12,6 @@ from playwright.async_api import async_playwright
 import logging
 import matplotlib.pyplot as plt
 import plotly.express as px
-from flask_caching import Cache
-import dash
-from dash import dcc
-from dash import html
-from dash import Dash
-from dash.dependencies import Input, Output
 import zipfile
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -25,14 +19,7 @@ from reportlab.lib.units import inch
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-cache = Cache(config={'CACHE_TYPE': 'simple'})
-cache.init_app(app)
-dash_app = Dash(__name__, server=app, url_base_pathname='/dash/')
-figures = {}
 
-dash_app.layout = html.Div([
-    dcc.Graph(id='example-graph')
-])
 
 user_agents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -173,8 +160,6 @@ async def scrape_flipkart_search(FSN_list):
 
         for idx, html in enumerate(responses):
             progress = int((idx + 1) / total_fsns * 100)
-            print(f"Processing FSN: {FSN_list[idx]}")
-            print(f"Progress: {progress}")
 
             soup = BeautifulSoup(html, 'html.parser')
 
@@ -287,8 +272,6 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
         total_fsns = len(pid_list)
         for i, pid in enumerate(pid_list):
             progress = int((i + 1) / total_fsns * 100)
-            print(f"Processing FSN: {pid_list[i]}")
-            print(f"Progress: {progress}")
 
             html = html_responses[i]
             
@@ -507,7 +490,6 @@ async def comp_scrape():
     run_timee = endtime - start_time
 
     df = pd.DataFrame(all_data)
-    print(df.shape)
 
     comp_excel_file = io.BytesIO()
     with pd.ExcelWriter(comp_excel_file, engine='xlsxwriter') as writer:
@@ -645,7 +627,6 @@ def calculate_search_rank(df, page_column, rank_column):
     return avg_search_rank
 
 def create_horizontal_bar_chart(df, x_column, y_column, title):
-    print(df)
     # No need to sort here, use the sorted DataFrame as it is
     fig = px.bar(
         df,  # Use the sorted DataFrame
@@ -683,58 +664,7 @@ def calculate_brand_percentage_by_page(df, page_column):
     ).round(1).astype(str) + '%'
     return brand_percentage_by_page
 
-def create_dash_layout(df):
-    unique_pages = sorted(df['Page'].unique())
-    
-    dash_app.layout = html.Div([
-        dcc.Dropdown(
-            id='page-dropdown',
-            options=[{'label': f'Page {i}', 'value': i} for i in unique_pages],
-            value=1,  # Default value
-            clearable=False
-        ),
-        dcc.Graph(id='bar-chart')
-    ])
-    
-    @dash_app.callback(
-        Output('bar-chart', 'figure'),
-        Input('page-dropdown', 'value')
-    )
-    def update_chart(selected_page):
-        filtered_df = df[df['Page'] == selected_page]
-        brand_counts = filtered_df['Brand'].value_counts().reset_index()
-        brand_counts.columns = ['Brand', 'count']
-        brand_counts['Percentage'] = (brand_counts['count'] / brand_counts['count'].sum() * 100).round(1).astype(str) + '%'
-        
-        # Sort the DataFrame in descending order by 'count'
-        brand_counts = brand_counts.sort_values(by='count', ascending=False)
-        
-        # Create the bar chart with explicitly sorted y-axis
-        fig = px.bar(
-            brand_counts,
-            x='count',
-            y='Brand',
-            orientation='h',
-            text='Percentage',
-            labels={'count': 'Count', 'Brand': 'Brand'},
-            title=f'Brand Distribution - Page {selected_page}'
-        )
-        
-        # Update layout to ensure y-axis is sorted correctly
-        fig.update_layout(
-            yaxis=dict(categoryorder='total ascending'),
-            font=dict(family='Montserrat, sans-serif', size=12),
-            xaxis_title=None,
-            yaxis_title=None,
-            margin=dict(l=0, r=0, t=40, b=0)
-        )
-        fig.update_traces(texttemplate='%{text}', textposition='outside')
 
-        global figures
-        figures['rank_by_page'] = fig
-        
-        return fig
-    
 def create_charts(df):
     brand_counts = calculate_counts(df, 'Brand')
     revenue_by_brand = calculate_metric(df, 'Brand', 'Approx_Weekly_Revenue')
@@ -751,37 +681,30 @@ def create_charts(df):
     fig3.write_image("drr_by_brand.png")
     fig_search_rank.write_image("average_search_rank_by_brand.png")
 
-    global figures
-    figures['brand_distribution'] = fig1
-    figures['weekly_revenue_by_brand'] = fig2
-    figures['drr_by_brand'] = fig3
-    figures['average_search_rank_by_brand'] = fig_search_rank
-
     return fig1, fig2, fig3, fig_search_rank
     
 
 @app.route('/analysis')
 def analysis():
-    global figures
-    # Read the DataFrame from the CSV file
+   
     df = pd.read_csv('flipkart_comp_data.csv')
     df = df[df['Sponsored']=='No']
     df.loc[df['Seller Rating'] <= 2.0, 'Approx_Weekly_Revenue'] *= 0.5
 
     df = df.drop_duplicates(subset='FSN', keep='first')
-    create_dash_layout(df)
 
     fig1, fig2, fig3, fig_search_rank = create_charts(df)
     
+    graphs = {
+        'graph_html1': generate_html(fig1),
+        'graph_html2': generate_html(fig2),
+        'graph_html3': generate_html(fig3),
+        'graph_html4': generate_html(fig_search_rank)
+    }
 
-    # Generate HTML for the plots
-    graph_html1 = generate_html(fig1)
-    graph_html2 = generate_html(fig2)
-    graph_html3 = generate_html(fig3)
-    graph_html4 = generate_html(fig_search_rank)
-
-    return render_template('analysis.html', graph_html1=graph_html1, graph_html2=graph_html2,graph_html3=graph_html3,graph_html4=graph_html4
-                           ,fetch_download_link=url_for('download_file_comp'), download_graphs=url_for('download_graphs'))
+    return render_template('analysis.html', graphs=graphs,
+                           fetch_download_link=url_for('download_file_comp'),
+                           download_graphs=url_for('download_graphs'), df=df)
 
 def create_pdf():
     pdf_path = "charts.pdf"
