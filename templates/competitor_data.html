@@ -13,73 +13,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Competitor Data</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
-    <link rel="stylesheet" href="css/style.css">
-    <!-- Include jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" crossorigin="anonymous"></script>
 
-    <!-- Include Bootstrap JS -->
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
     <style>
         body {
-            font-family: 'Montserrat', sans-serif;
-            background-color: #f8f9fa;
-            color: #343a40;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
             margin: 0;
-            padding-top: 80px; /* Padding for fixed header */
+            padding-top: 70px; /* Padding for fixed header */
         }
         .header {
-            background-color: #000;
+            background-color: #222;
             color: #fff;
             text-align: center;
-            padding: 20px 0;
+            padding: 15px 0;
             position: fixed;
             top: 0;
             width: 100%;
             z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .header h1 {
             margin: 0;
+            font-size: 1.5rem;
             font-weight: 600;
         }
         .container {
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto;
+            padding: 20px;
         }
-        .form-group label {
-            font-weight: 600;
+        .nav-tabs {
+            border-bottom: 1px solid #ddd;
+        }
+        .nav-tabs .nav-link {
+            border: 1px solid transparent;
+            border-radius: 0;
+            margin-right: 0;
+            color: #000000;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #fff;
+            border-color: #ddd;
+            color: #000;
+            font-weight: bold;
         }
         .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
             font-size: 1rem;
-            padding: 0.25rem 0.75rem;
-            background-color: #000;
-            border-color: #000;
+            padding: 0.5rem 1rem;
         }
         .btn-primary:hover {
-            background-color: #333;
-            border-color: #333;
+            background-color: #0056b3;
+            border-color: #0056b3;
         }
         .result-section {
-            background: #ffffff;
+            background: #fff;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-top: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        .form-group label {
+            font-weight: 500;
         }
         .hidden {
             display: none;
+        }
+        .text-center {
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Flipkart Scraper</h1>
+        <h1>Competitor Data</h1>
     </div>
     <div class="container mt-4">
         <!-- Tabs -->
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item">
-                <a class="nav-link" id="home-tab" href="/self" role="tab" aria-controls="home" aria-selected="false">FSNs Scraper</a>
+                <a class="nav-link" id="home-tab" href="/home" role="tab" aria-controls="home" aria-selected="false">FSNs Scraper</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link active" id="competitor-data-tab" data-toggle="tab" href="#competitor-data" role="tab" aria-controls="competitor-data" aria-selected="true">Competitor Data</a>
@@ -87,14 +106,14 @@
         </ul>
         <div class="tab-content mt-3">
             <!-- Competitor Data Tab -->
-            <div class="page page-active" id="competitor-data">
+            <div class="tab-pane fade show active" id="competitor-data" role="tabpanel" aria-labelledby="competitor-data-tab">
                 <form action="/fetch_competitor_data" method="post" id="competitor-data-form">
                     <div class="form-group">
-                        <label for="query">Query:</label>
+                        <label for="query"></label>
                         <input type="text" class="form-control" id="query" name="query" placeholder="Enter search query" required>
                     </div>
                     <div class="form-group">
-                        <label for="num_pages">No. of Pages:</label>
+                        <label for="num_pages"></label>
                         <input type="number" class="form-control" id="num_pages" name="num_pages" placeholder="Enter number of pages" required>
                     </div>
                     <div class="form-group text-center">
@@ -103,33 +122,34 @@
                             <label class="btn btn-outline-primary active">
                                 <input type="radio" name="sort_option" id="relevance" value="relevance" checked> Relevance
                             </label>
-                            <label class="btn btn-outline-primary">
+                            <label class="btn btn-outline-primary ">
                                 <input type="radio" name="sort_option" id="popularity" value="popularity"> Popularity
                             </label>
                         </div>
                     </div>
+                    <br>
                     <div class="text-center">
                         <button type="submit" class="btn btn-primary">Fetch Data</button>
                     </div>
-                </form>                
-                
-                <div style="margin-top: 40px;"></div>
+                </form>
                 
                 {% if fetch_runtime %}
-                <div class="result-section text-center">
+                <div class="result-section text-center mt-4">
+                    
                     <h4>Fetch Runtime:</h4>
                     <p>{{ '{:.1f}'.format(fetch_runtime) }} seconds</p>
                     <a href="{{ fetch_download_link }}" class="btn btn-success">Download Data</a>
                     <a href="{{ analysis_link }}" class="btn btn-primary">Detailed Analysis</a>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
     </div>
-    <!-- Include jQuery and Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zyDMDt8s/0/1C0PRq/4rfFflYBIZ0f/2Fmk8jM/T" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9H2wBsN5FRK2Z4wff8H8F7o9TDoP5uDJYx4VnvKQDF0VrHau92bQ" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-pzjw8f+ua7Kw1TIWw6tp+5cXy8V5pD0gD43fR0n8ZDzDAI7Bqhu5Opm6FfFOlbGgF" crossorigin="anonymous"></script>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/2E4oWQe5dB7W3t3vO4h5RS5o4T7CQo4cG8blZZN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js" integrity="sha384-gtF6v52oD7O3giZ5d35vDFyUjQk9FPB2BwbptFwb1iH5VRxLUycrW2hF5ZG2t5kA" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-b4gtvBf6l7mBxxz8B6x4n5LFhB9y0n8m8FZt/8v8p8CjX6eujKt/5ywDXhwE5J9b" crossorigin="anonymous"></script>
 </body>
 </html>
+
 
