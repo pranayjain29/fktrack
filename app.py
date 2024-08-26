@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, url_for, jsonify, send_file, redirect
+from flask import Flask, request, render_template, send_file, url_for, jsonify, send_file, redirect, session
 import pandas as pd
 import io
 import aiohttp
@@ -43,28 +43,26 @@ SUPABASE_URL = 'https://wutogxoedilgjjjhrqjq.supabase.co'
 SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1dG9neG9lZGlsZ2pqamhycWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjM2MjcxMzMsImV4cCI6MjAzOTIwMzEzM30.nZbd5s9G5Xsp4oXvLOlpcWmVoVb_uhBJefRx803FWMY'
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 executor = ThreadPoolExecutor(max_workers=2)
-global session
-session = None
+app.secret_key = 'thisismykey' 
 
 @app.route('/')
 def home():
-    global session
-    if session:
-        print(session.user.email)
+    if 'user_email' in session:
+        print(session['user_email'])
         return render_template('index.html')
     return render_template('login.html')
 
 @app.route('/home', methods=['GET', 'POST'])
 def login():
-    global session
-    if session:
+    if 'user_email' in session:
         return render_template('index.html')
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        session = supabase.auth.sign_in_with_password({ "email": email, "password": password })
-        sender_mail = session.user.email
-        logging.info(f"Logged in: {sender_mail}")
+        user_session = supabase.auth.sign_in_with_password({ "email": email, "password": password })
+        session['user_email'] = user_session.user.email
+        #sender_mail = user_session.user.email
+        logging.info(f"Logged in: {session['user_email']}")
     return render_template('index.html')
 
 user_agents = [
