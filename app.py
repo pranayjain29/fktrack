@@ -13,13 +13,59 @@ import logging
 import matplotlib.pyplot as plt
 import plotly.express as px
 import zipfile
+
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Image
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
+import zipfile
+from supabase import create_client, Client
+from concurrent.futures import ThreadPoolExecutor
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
+from email.mime.application import MIMEApplication
+
+from analytical_report import create_pdf_report
+
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+SUPABASE_URL = 'https://wutogxoedilgjjjhrqjq.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1dG9neG9lZGlsZ2pqamhycWpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjM2MjcxMzMsImV4cCI6MjAzOTIwMzEzM30.nZbd5s9G5Xsp4oXvLOlpcWmVoVb_uhBJefRx803FWMY'
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+executor = ThreadPoolExecutor(max_workers=2)
+global session
+session = None
 
+@app.route('/')
+def home():
+    global session
+    if session:
+        print(session.user.email)
+        return render_template('index.html')
+    return render_template('login.html')
+
+@app.route('/home', methods=['GET', 'POST'])
+def login():
+    global session
+    if session:
+        return render_template('index.html')
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        session = supabase.auth.sign_in_with_password({ "email": email, "password": password })
+        sender_mail = session.user.email
+        print(f"Logged in: {sender_mail}")
+    return render_template('index.html')
 
 user_agents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -43,6 +89,15 @@ def get_mobile_headers():
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive'
     }
+
+def clean_price(price_text):
+    # Remove ₹ symbol and commas, then convert to float
+    cleaned_price = re.sub(r'[₹,]', '', price_text)
+    try:
+        price = float(cleaned_price)
+    except ValueError:
+        price = 0
+    return price
 
 def extract_pid(url):
     try:
@@ -103,15 +158,31 @@ def convert_to_int(value):
         print(f"Failed to convert value: {value}. Error: {e}")
         return 0
 
-def clean_price(price_text):
-    # Remove ₹ symbol and commas, then convert to float
-    cleaned_price = re.sub(r'[₹,]', '', price_text)
-    try:
-        price = float(cleaned_price)
-    except ValueError:
-        price = 'N/A'
-    return price
+def send_excel_via_email(sender_email, sender_password, receiver_email, subject, body, pdf_buffer, file_buffer):
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
 
+    pdf_part = MIMEApplication(pdf_buffer.read(), Name="Market_Report.pdf")
+    pdf_part['Content-Disposition'] = 'attachment; filename="Market_Report.pdf"'
+    msg.attach(pdf_part)
+
+    part = MIMEApplication(file_buffer.read(), Name="report.xlsx")
+    part['Content-Disposition'] = 'attachment; filename="report.xlsx"'
+    msg.attach(part)
+
+    print("File Attached")
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+        print("Inside Server")
+        #server.starttls(timeout=10)
+        #print("TTLS Done")
+        server.login(sender_email, sender_password)
+        print("Logged in successfully.")
+        server.sendmail(sender_email, receiver_email, msg.as_string())
+        print("Email sent successfully.")
+        
 async def extract_star_ratings(soup):
     star_ratings = {'5_star': '0', '4_star': '0', '3_star': '0', '2_star': '0', '1_star': '0'}
     try:
@@ -188,16 +259,16 @@ async def scrape_flipkart_search(FSN_list):
             seller_element = soup.find('div', id='sellerName')
             seller_name = seller_element.text.strip() if seller_element else 'N/A'
 
-            seller_rating = 0.0
-            if seller_name != 'N/A' and any(char.isdigit() for char in seller_name):
-                try:
-                    seller_rating = float(''.join(filter(lambda x: x.isdigit() or x == '.', seller_name.split()[-1])))
-                    seller_name = seller_name[:seller_name.rfind(str(seller_rating))]
-                except ValueError:
-                    pass
+            seller_rating = float(seller_name[-3:]) if seller_name[-3:].replace('.', '').isdigit() else 0.0
+            seller_name = seller_name[:-3].strip()
 
             parameter_ratings = await extract_parameter_ratings(soup)
             star_ratings = await extract_star_ratings(soup)
+
+            highlight_div = soup.find('div', class_='vN8oQA')
+            parent_div = highlight_div.find_next_sibling('div', class_='xFVion') if highlight_div else None
+            list_items = parent_div.find_all('li', class_='_7eSDEz') if parent_div else []
+            features = {f'feature{i+1}': li.text.strip() for i, li in enumerate(list_items)}
 
             all_data.append({
                 'FSN': FSN_list[idx],
@@ -214,19 +285,18 @@ async def scrape_flipkart_search(FSN_list):
                 '3 Star Ratings': star_ratings.get('3_star', '0'),
                 '2 Star Ratings': star_ratings.get('2_star', '0'),
                 '1 Star Ratings': star_ratings.get('1_star', '0'),
-                **parameter_ratings
+                **parameter_ratings,
+                **features
             })
 
     df = pd.DataFrame(all_data)
     return df
 
-@app.route('/')
-def index():
-    return render_template('index.html')
 
 @app.route('/scrape', methods=['POST'])
 async def scrape():
-    
+    if not session:
+        return login
     start_time = time.time()
     asins = request.form['asins']
     FSN_list = asins.split()
@@ -322,16 +392,16 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
             seller_element = soup.find('div', id='sellerName')
             seller_name = seller_element.text.strip() if seller_element else 'N/A'
 
-            seller_rating = 0.0
-            if seller_name != 'N/A' and any(char.isdigit() for char in seller_name):
-                try:
-                    seller_rating = float(''.join(filter(lambda x: x.isdigit() or x == '.', seller_name.split()[-1])))
-                    seller_name = seller_name[:seller_name.rfind(str(seller_rating))]
-                except ValueError:
-                    pass
+            seller_rating = float(seller_name[-3:]) if seller_name[-3:].replace('.', '').isdigit() else 0.0
+            seller_name = seller_name[:-3].strip()
 
             parameter_ratings = await extract_parameter_ratings(soup)
             star_ratings = await extract_star_ratings(soup)
+
+            highlight_div = soup.find('div', class_='vN8oQA')
+            parent_div = highlight_div.find_next_sibling('div', class_='xFVion') if highlight_div else None
+            list_items = parent_div.find_all('li', class_='_7eSDEz') if parent_div else []
+            features = {f'feature{i+1}': li.text.strip() for i, li in enumerate(list_items)}
 
             DRR = round(first_number / second_number) if second_number != 0 else 0
             Weekly_Revenue = round(DRR*7*price)
@@ -359,6 +429,7 @@ async def scrape_flipkart_product2(pid_list, sponsored_list, page_list, rank_lis
                 '2 Star Ratings': star_ratings.get('2_star', '0'),
                 '1 Star Ratings': star_ratings.get('1_star', '0'),
                 **parameter_ratings,
+                **features,
                 'Orders': first_number,
                 'Days': second_number,
             }
@@ -412,7 +483,6 @@ async def scrape_pids(query, pages, sort_option):
             paging.extend(result[2])
             rank.extend(result[3])
 
-        
         logging.info(f"Inside first pids: {pids}")
     return pids, sponsored_status, paging, rank
 
@@ -468,11 +538,19 @@ async def scrape_pids2(query, pages, sort_option):
 
 @app.route('/fetch_competitor_data', methods=['POST'])
 async def comp_scrape():
-
-    start_time = time.time()
+    global session
     query = request.form['query']
     pages = int(request.form['num_pages'])
     sort_option = request.form['sort_option']
+
+    executor.submit(asyncio.run, run_scraping_task(query, sort_option, pages, session.user.email))
+
+    # Display the message and end the client-side connection
+    logging.info("Your report will be sent through mail")
+    return render_template('through_mail.html')
+
+async def run_scraping_task(query, sort_option, pages, sender_mail):
+    start_time = time.time()
     logging.info(sort_option)
     all_data = []
     repeat = 0
@@ -490,26 +568,26 @@ async def comp_scrape():
     run_timee = endtime - start_time
 
     df = pd.DataFrame(all_data)
+    file_buffer = io.BytesIO()
+    df.to_excel(file_buffer, index=False)
+    file_buffer.seek(0)
 
-    comp_excel_file = io.BytesIO()
-    with pd.ExcelWriter(comp_excel_file, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Flipkart Comp Data')
-    comp_excel_file.seek(0)
+    pdf_buffer = create_pdf_report(query, pages, df)
 
-    temp_file_path = 'Flipkart_CompData_scrapper.xlsx'
-    with open(temp_file_path, 'wb') as f:
-        f.write(comp_excel_file.getvalue())
-
-    df.to_csv('flipkart_comp_data.csv', index=False)
+    logging.info(f"Sending to: {sender_mail}")
+    send_excel_via_email(sender_email="pranayjain354@gmail.com", sender_password="qoae qasu ozeo qdhe", receiver_email=sender_mail,
+                             subject="Competition Scrapper Report", body="Congratulations! You can now download the attached report from below.", pdf_buffer=pdf_buffer, file_buffer = file_buffer)
+    logging.info("File Sent")
+    os.remove('flipkart_comp_data.xlsx')
     return render_template('competitor_data.html', fetch_runtime=run_timee, fetch_download_link=url_for('download_file_comp'), analysis_link=url_for('analysis'))
-
-@app.route('/index2')
+    
+@app.route('/competition')
 def index2():
-    return render_template('competitor_data.html')
+    global session
+    if not session:
+        return redirect(url_for('home'))
 
-@app.route('/self')
-def self():
-    return render_template('index.html')
+    return render_template('competitor_data.html')
 
 @app.route('/download_file_comp')
 def download_file_comp():
@@ -584,161 +662,6 @@ def download_file_comparison():
         as_attachment=True,
         download_name='Flipkart_Comparison_Data.xlsx'
     )
-
-def calculate_counts(df, column_name):
-        counts = df[column_name].value_counts().reset_index()
-        counts.columns = [column_name, 'count']
-        counts['Percentage'] = (counts['count'] / counts['count'].sum() * 100).round(1).astype(str) + '%'
-        return counts
-
-def calculate_metric(df, column_name, revenue_column):
-    revenue = df.groupby(column_name)[revenue_column].sum().reset_index()
-    revenue = revenue.sort_values(by=revenue_column, ascending=False)
-    revenue['Percentage'] = (revenue[revenue_column] / revenue[revenue_column].sum() * 100).round(1).astype(str) + '%'
-    return revenue
-
-def create_bar_chart(df, x_column, y_column, text_column, title):
-    fig = px.bar(
-        df,
-        x=x_column,
-        y=y_column,
-        text=text_column,
-        labels={x_column: x_column, y_column: y_column},
-        title=title,
-    )
-    fig.update_layout(
-        font=dict(family='Montserrat, sans-serif', size=12),
-        xaxis_title=None,
-        yaxis_title=None,
-        xaxis_tickangle=0,
-        margin=dict(l=0, r=0, t=40, b=0)
-    )
-    fig.update_traces(texttemplate='%{text}', textposition='outside')
-    return fig
-
-def generate_html(fig):
-    return fig.to_html(full_html=False, include_plotlyjs='cdn')
-
-def calculate_search_rank(df, page_column, rank_column):
-    df['search_rank'] = (df[page_column] - 1) * df[rank_column].max() + df[rank_column]
-    avg_search_rank = df.groupby('Brand')['search_rank'].mean().reset_index()
-    avg_search_rank['search_rank'] = (avg_search_rank['search_rank'] / avg_search_rank['search_rank'].max() * 100).round(1)
-    avg_search_rank = avg_search_rank.sort_values(by='search_rank', ascending=False).reset_index(drop=True)
-    return avg_search_rank
-
-def create_horizontal_bar_chart(df, x_column, y_column, title):
-    # No need to sort here, use the sorted DataFrame as it is
-    fig = px.bar(
-        df,  # Use the sorted DataFrame
-        x=x_column,
-        y=y_column,
-        orientation='h',
-        labels={x_column: x_column, y_column: y_column},
-        title=title,
-    )
-    
-    # Set x-axis range from 0 to 100
-    fig.update_layout(
-        font=dict(family='Montserrat, sans-serif', size=12),
-        xaxis_title=None,
-        yaxis_title=None,
-        margin=dict(l=0, r=0, t=40, b=0),
-        xaxis=dict(range=[0, 100])  # Set x-axis range from 0 to 100
-    )
-    
-    fig.update_traces(
-        texttemplate='%{x:.1f}%',  # Add percentage symbol to the labels
-        textposition='outside'
-    )
-    
-    return fig
-
-def calculate_brand_percentage_by_page(df, page_column):
-    brand_percentage_by_page = (
-        df.groupby(['Brand', page_column])
-        .size()
-        .reset_index(name='count')
-    )
-    brand_percentage_by_page['Percentage'] = (
-        brand_percentage_by_page['count'] / brand_percentage_by_page.groupby(page_column)['count'].transform('sum') * 100
-    ).round(1).astype(str) + '%'
-    return brand_percentage_by_page
-
-
-def create_charts(df):
-    brand_counts = calculate_counts(df, 'Brand')
-    revenue_by_brand = calculate_metric(df, 'Brand', 'Approx_Weekly_Revenue')
-    drr_by_brand = calculate_metric(df, 'Brand', 'DRR')
-    avg_search_rank = calculate_search_rank(df, 'Page', 'Rank')
-
-    fig1 = create_bar_chart(brand_counts, 'Brand', 'count', 'Percentage', 'Brand Distribution')
-    fig2 = create_bar_chart(revenue_by_brand, 'Brand', 'Approx_Weekly_Revenue', 'Percentage', 'Weekly Revenue by Brand')
-    fig3 = create_bar_chart(drr_by_brand, 'Brand', 'DRR', 'Percentage', 'DRR by Brand')
-    fig_search_rank = create_horizontal_bar_chart(avg_search_rank, 'search_rank', 'Brand', 'Average Search Rank by Brand')
-
-    fig1.write_image("brand_distribution.png")
-    fig2.write_image("weekly_revenue_by_brand.png")
-    fig3.write_image("drr_by_brand.png")
-    fig_search_rank.write_image("average_search_rank_by_brand.png")
-
-    return fig1, fig2, fig3, fig_search_rank
-    
-
-@app.route('/analysis')
-def analysis():
-   
-    df = pd.read_csv('flipkart_comp_data.csv')
-    df = df[df['Sponsored']=='No']
-    df.loc[df['Seller Rating'] <= 2.0, 'Approx_Weekly_Revenue'] *= 0.5
-
-    df = df.drop_duplicates(subset='FSN', keep='first')
-
-    fig1, fig2, fig3, fig_search_rank = create_charts(df)
-    
-    graphs = {
-        'graph_html1': generate_html(fig1),
-        'graph_html2': generate_html(fig2),
-        'graph_html3': generate_html(fig3),
-        'graph_html4': generate_html(fig_search_rank)
-    }
-
-    return render_template('analysis.html', graphs=graphs,
-                           fetch_download_link=url_for('download_file_comp'),
-                           download_graphs=url_for('download_graphs'), df=df)
-
-def create_pdf():
-    pdf_path = "charts.pdf"
-    c = canvas.Canvas(pdf_path, pagesize=letter)
-    width, height = letter
-
-    # Add images to PDF
-    images = [
-        ("brand_distribution.png", "Brand Distribution"),
-        ("weekly_revenue_by_brand.png", "Weekly Revenue by Brand"),
-        ("drr_by_brand.png", "DRR by Brand"),
-        ("average_search_rank_by_brand.png", "Average Search Rank by Brand")
-    ]
-
-    margin = 0.5 * inch
-    image_width = 7.5 * inch
-    image_height = 3 * inch
-    y = height - margin - image_height
-
-    for image, title in images:
-        if y < margin + image_height:
-            c.showPage()
-            y = height - margin - image_height
-        
-        c.drawString(margin, y + image_height + 10, title)  # Add title above the image
-        c.drawImage(image, margin, y, width=image_width, height=image_height, preserveAspectRatio=True)
-        y -= image_height + margin  # Move to the next position
-
-    c.save()
-
-@app.route('/download_graphs')
-def download_graphs():
-    create_pdf()  # Generate the PDF with the graphs
-    return send_file('charts.pdf', as_attachment=True, download_name='charts.pdf', mimetype='application/pdf')
 
 
 if __name__ == '__main__':
