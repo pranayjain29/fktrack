@@ -25,3 +25,4 @@ secure-smtplib
 seaborn
 wordcloud
 scikit-learn
+Flask-Session
