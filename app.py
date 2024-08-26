@@ -534,12 +534,13 @@ async def scrape_pids2(query, pages, sort_option):
 
 @app.route('/fetch_competitor_data', methods=['POST'])
 async def comp_scrape():
-    global session
+    if 'user_email' not in session:
+        return redirect(url_for('home'))
     query = request.form['query']
     pages = int(request.form['num_pages'])
     sort_option = request.form['sort_option']
 
-    executor.submit(asyncio.run, run_scraping_task(query, sort_option, pages, session.user.email))
+    executor.submit(asyncio.run, run_scraping_task(query, sort_option, pages, session['user_email']))
 
     # Display the message and end the client-side connection
     logging.info("Your report will be sent through mail")
@@ -579,6 +580,8 @@ async def run_scraping_task(query, sort_option, pages, sender_mail):
     
 @app.route('/competition')
 def index2():
+     if 'user_email' not in session:
+        return redirect(url_for('home'))
     return render_template('competitor_data.html')
 
 @app.route('/download_file_comp')
