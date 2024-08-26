@@ -22,3 +22,6 @@ kaleido
 supabase
 futures
 secure-smtplib
+seaborn
+wordcloud
+scikit-learn
