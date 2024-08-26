@@ -64,7 +64,7 @@ def login():
         password = request.form['password']
         session = supabase.auth.sign_in_with_password({ "email": email, "password": password })
         sender_mail = session.user.email
-        print(f"Logged in: {sender_mail}")
+        logging.info(f"Logged in: {sender_mail}")
     return render_template('index.html')
 
 user_agents = [
@@ -584,7 +584,6 @@ async def run_scraping_task(query, sort_option, pages, sender_mail):
 @app.route('/competition')
 def index2():
     global session
-    logging.info(f"Inside competition: {session.user.email}")
     if not session:
         return redirect(url_for('home'))
 
