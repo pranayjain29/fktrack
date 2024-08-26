@@ -187,7 +187,7 @@ def create_pdf_report(query, pages, df):
     story.append(Spacer(1, 0.2 * inch))  # Add space after title
 
     # Add market size information with rupee symbol and bold
-    total_revenue = df['Weekly Revenue'].sum() * 52.5
+    total_revenue = df['Approx_Weekly_Revenue'].sum() * 52.5
 
     df_grouped = df.groupby('Brand')['DRR'].sum().reset_index()
     df_grouped = df_grouped.sort_values(by='DRR', ascending=False)
@@ -221,7 +221,7 @@ def create_pdf_report(query, pages, df):
     story.append(Spacer(1, 0.2 * inch))  # Add space after market size text
 
     generate_top_10_brands_graph_and_table(df, 'Count', story)
-    generate_top_10_brands_graph_and_table(df, 'Weekly Revenue', story)
+    generate_top_10_brands_graph_and_table(df, 'Approx_Weekly_Revenue', story)
     generate_top_10_brands_graph_and_table(df, 'DRR', story)
     generate_top_10_brands_graph(df,'Price',story)
     generate_top_10_brands_graph(df,'Price',story, sortt="Bottom")
