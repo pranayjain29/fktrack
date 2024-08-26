@@ -582,7 +582,7 @@ async def run_scraping_task(query, sort_option, pages, sender_mail):
 def index2():
      if 'user_email' not in session:
         return redirect(url_for('home'))
-    return render_template('competitor_data.html')
+     return render_template('competitor_data.html')
 
 @app.route('/download_file_comp')
 def download_file_comp():
