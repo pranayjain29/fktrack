@@ -295,8 +295,6 @@ async def scrape_flipkart_search(FSN_list):
 
 @app.route('/scrape', methods=['POST'])
 async def scrape():
-    if not session:
-        return login
     start_time = time.time()
     asins = request.form['asins']
     FSN_list = asins.split()
@@ -583,10 +581,6 @@ async def run_scraping_task(query, sort_option, pages, sender_mail):
     
 @app.route('/competition')
 def index2():
-    global session
-    if not session:
-        return redirect(url_for('home'))
-
     return render_template('competitor_data.html')
 
 @app.route('/download_file_comp')
