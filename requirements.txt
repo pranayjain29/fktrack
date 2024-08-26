@@ -22,4 +22,3 @@ kaleido
 supabase
 futures
 secure-smtplib
-email
