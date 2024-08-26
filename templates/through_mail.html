@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Status</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .message-container {
+            text-align: center;
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .tick-mark {
+            font-size: 48px;
+            color: #28a745;
+        }
+        .message {
+            font-size: 18px;
+            margin: 20px 0;
+        }
+        .message a {
+            color: #007bff;
+            text-decoration: underline;
+        }
+        .message a:hover {
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="message-container">
+        <div class="tick-mark">&#10004;</div>
+        <div class="message">
+            Your report will be sent to your email. Go to the <a href="/home">home page</a>.
+        </div>
+    </div>
+</body>
+</html>
