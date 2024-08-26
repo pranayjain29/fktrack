@@ -1,8 +1,6 @@
 flask[async]
 requests==2.32.2
 gunicorn==20.1.0
-selenium
-webdriver-manager
 beautifulsoup4
 pandas
 regex
@@ -21,3 +19,7 @@ matplotlib
 zipfile36
 reportlab
 kaleido
+supabase
+futures
+secure-smtplib
+email
